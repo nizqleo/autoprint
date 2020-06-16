@@ -2,65 +2,35 @@
 
 #include "datasetmodel.h"
 
-datasetModel::datasetModel(QObject *parent)
-    : QAbstractTableModel(parent)
+datasetModel::datasetModel(API* api ,QObject *parent)
+    : QAbstractTableModel(parent),api(api)
 {
     readDataset();
+    Task::DModel = this;
+    searchingMode = false;
 }
 
 void datasetModel::readDataset()
 {
     beginResetModel();
 
-    if(!get_files(dir+"\\AR4", PatternNames)){
-        std::cout<<"failed to find any file of this type."<<std::endl;
+    api->getPatternNameList(patternNames);
+
+    for (int i = 0; i < patternNames.size(); i++) {
+        Pattern temp = api->readPatternData(patternNames[i]);
+        patterns.push_back(temp);
     }
 
-    for (int i = 0; i < PatternNames.size(); i++) {
-        QPixmap image;
-        std::string name = dir+"\\image\\"+PatternNames[i]+"\\P.jpg";
-        if(image.load(QString::fromStdString(name))){
-            Pimages[PatternNames[i]] = image;
-        }
-        name = dir+"\\image\\"+PatternNames[i]+"\\M.jpg";
-        if(image.load(QString::fromStdString(name))){
-            Mimages[PatternNames[i]] = image;
-        }
-
-        int status = 0;
-        std::ifstream inFile(dir+"\\AR4\\"+PatternNames[i]+"\\info.txt", ios::out);
-        if(!inFile){
-            cout<<"failed to open order file."<<endl;
-        }
-        string lineStr;
-        getline(inFile, lineStr);
-        if(lineStr[0]== '3') status = 48;
-        if(lineStr[0]== '2') status = 32;
-        if(lineStr[0]== '1') status = 16;
-        inFile.close();
-
-        //AR4
-        QFileInfo fileInfo;
-
-        fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+PatternNames[i]+"\\LF.txt"));
-        if(fileInfo.isFile())  status += 8;
-        fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+PatternNames[i]+"\\DF.txt"));
-        if(fileInfo.isFile())  status += 4;
-        fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+PatternNames[i]+"\\LB.txt"));
-        if(fileInfo.isFile())  status += 2;
-        fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+PatternNames[i]+"\\DB.txt"));
-        if(fileInfo.isFile())  status += 1;
-
-        fileStatus[PatternNames[i]] = status;
-        cout<<status<<endl;
-    }
     endResetModel();
 }
 
 //返回行数
 int datasetModel::rowCount(const QModelIndex & /* parent */) const
 {
-    return PatternNames.size();
+    if(searchingMode)
+        return indexMap.size();
+    else
+        return patternNames.size();
 }
 
 //返回列数
@@ -79,10 +49,12 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
     if (role == Qt::TextAlignmentRole) {
         return int(Qt::AlignHCenter | Qt::AlignVCenter);
     }
+
+    int patternIndex = foundIndexMap(index.row());
     if(index.column() == 1){
-        if(Mimages.find(PatternNames[index.row()]) != Mimages.end()){
+        if(patterns[patternIndex].hasMimages){
             if(role == Qt::DecorationRole)
-                return Mimages[PatternNames[index.row()]].scaled(QSize(280,280));
+                return patterns[patternIndex].Mimages.scaled(QSize(280,280));
         }
         else {
             if(role == Qt::DisplayRole)
@@ -90,9 +62,9 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
         }
     }
     if(index.column() == 2){
-        if(Pimages.find(PatternNames[index.row()]) != Pimages.end()){
+        if(patterns[patternIndex].hasPimages){
             if(role == Qt::DecorationRole)
-                return Pimages[PatternNames[index.row()]].scaled(QSize(280,280));
+                return patterns[patternIndex].Pimages.scaled(QSize(280,280));
         }
         else {
             if(role == Qt::DisplayRole)
@@ -102,10 +74,10 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
 
     if (role == Qt::DisplayRole) {
         if(index.column() == 0){//pattern name
-            return QString::fromStdString(PatternNames[index.row()]);
+            return QString::fromStdString(patternNames[patternIndex]);
         }
 
-        int status = fileStatus[PatternNames[index.row()]];
+        int status = patterns[patternIndex].status;
         if(index.column() == 3){//印花位置
             if (status>= 48) //11
                 return QVariant("前后皆有");
@@ -125,7 +97,10 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
                 value += "浅色后片文件\n";
             if((status & 1) == 1)
                 value += "深色后片文件\n";
-            value.chop(1);
+
+            if(value == "")
+                value = "无";
+            else value.chop(1);
 
             return QVariant(value);
         }
@@ -144,7 +119,7 @@ QVariant datasetModel::headerData(int section,
     if (role != Qt::DisplayRole)
         return QVariant();
     if(orientation == Qt::Vertical)
-        return section;
+        return section+1;
     switch (section) {
     case 0:
         return QString("款号");
@@ -162,31 +137,23 @@ QVariant datasetModel::headerData(int section,
 
 void datasetModel::deleteItem(int index){
     beginResetModel();
-    std::string pattern = PatternNames[index];
-    Pimages.erase(Pimages.find(pattern));
-    Mimages.erase(Mimages.find(pattern));
-    PatternNames.erase(PatternNames.begin()+index);
-    std::cout<<pattern<<std::endl;
+    int realIndex = foundIndexMap(index);
+    std::string pattern = patternNames[realIndex];
 
-    std::remove((dir+"\\image\\"+pattern+"\\P.jpg").data());
-    std::remove((dir+"\\image\\"+pattern+"\\M.jpg").data());
-    std::remove((dir+"\\AR4\\"+pattern+"\\LB.txt").data());
-    std::remove((dir+"\\AR4\\"+pattern+"\\LF.txt").data());
-    std::remove((dir+"\\AR4\\"+pattern+"\\DB.txt").data());
-    std::remove((dir+"\\AR4\\"+pattern+"\\DF.txt").data());
-    std::remove((dir+"\\AR4\\"+pattern+"\\info.txt").data());
+    patternNames.erase(patternNames.begin()+realIndex);
+    patterns.erase(patterns.begin()+realIndex);
+    if(find(indexMap.begin(), indexMap.end(), realIndex) != indexMap.end())
+        indexMap.erase(indexMap.begin() + index);
 
-
-    std::cout<<rmdir((dir+"\\AR4\\"+pattern+"\\").c_str())<<std::endl;
-    std::cout<<rmdir((dir+"\\image\\"+pattern+"\\").c_str())<<std::endl;
-//    QMessageBox::StandardButton reply = QMessageBox::information(NULL, "删除成功", "删除成功！", QMessageBox::Yes);
+    api->deletePatternData(pattern);
 
     endResetModel();
 }
 
 
 std::string datasetModel::getItem(int index){
-    return PatternNames[index];
+
+    return patternNames[foundIndexMap(index)];
 }
 
 
@@ -196,88 +163,93 @@ void datasetModel::save_files(std::string pattern, QString DFAR4Address, QString
     std::cout<<"saving"<<std::endl;
     beginResetModel();
 
-    if( std::find(PatternNames.begin(), PatternNames.end(), pattern) == PatternNames.end()){
-        PatternNames.push_back(pattern);
+    int patternIndex;
+    patternIndex = std::find(patternNames.begin(), patternNames.end(), pattern) - patternNames.begin();
+    if(patternIndex == patternNames.size()){
+        patternNames.push_back(pattern);
+        Pattern temp;
+        patterns.push_back(temp);
     }
+    patterns[patternIndex].name = pattern;
+    patterns[patternIndex].hasBack = hasBack;
+    patterns[patternIndex].hasFront = hasFront;
 
-    string folderPath = dir+"\\AR4\\"+pattern;
-    if (0 != access(folderPath.c_str(), 0))
-        mkdir(folderPath.c_str());   // 返回 0 表示创建成功，-1 表示失败
-    int status = 0;
-    if(hasBack) status += 32;
-    if(hasFront) status += 16;
-    //AR4
+    api->savePatternData(pattern, DFAR4Address, DBAR4Address,
+                        LFAR4Address, LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
+    api->examPatternData(&patterns[patternIndex]);
 
-    if(LFAR4Address != ""){
-        if(!coverFileCopy(dir+"\\AR4\\"+pattern+"\\LF.txt", LFAR4Address))
-            cout<<"failed saving LF AR4 file!"<<endl;
-    }
-    if(DFAR4Address != ""){
-        if(!coverFileCopy(dir+"\\AR4\\"+pattern+"\\DF.txt", DFAR4Address))
-            cout<<"failed saving DF AR4 file!"<<endl;
-    }
-    if(LBAR4Address != ""){
-        if(!coverFileCopy(dir+"\\AR4\\"+pattern+"\\LB.txt", LBAR4Address))
-            cout<<"failed saving LB AR4 file!"<<endl;
-    }
-    if(DBAR4Address != ""){
-        if(!coverFileCopy(dir+"\\AR4\\"+pattern+"\\DB.txt", DBAR4Address))
-            cout<<"failed saving DB AR4 file!"<<endl;
-    }
-
-    QFileInfo fileInfo;
-
-    fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+pattern+"\\LF.txt"));
-    if(fileInfo.isFile())  status += 8;
-    fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+pattern+"\\DF.txt"));
-    if(fileInfo.isFile())  status += 4;
-    fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+pattern+"\\LB.txt"));
-    if(fileInfo.isFile())  status += 2;
-    fileInfo.setFile(QString::fromStdString(dir + "\\AR4\\"+pattern+"\\DB.txt"));
-    if(fileInfo.isFile())  status += 1;
-
-
-    folderPath = dir+"\\image\\"+pattern;
-    if (0 != access(folderPath.c_str(), 0))
-        mkdir(folderPath.c_str());
-
-    QSize picSize(250, 250);
-    //image
-    if(PimageAddress == "" ||!coverFileCopy(dir+"\\image\\"+pattern+"\\P.jpg", PimageAddress)){
-        cout<<"failed saving P image!"<<endl;
-    }else{
-        QPixmap pixmapP(PimageAddress);
-        pixmapP = pixmapP.scaled(picSize);
-        Pimages[pattern] = pixmapP;
-    }
-    if(MimageAddress == "" ||!coverFileCopy(dir+"\\image\\"+pattern+"\\M.jpg", MimageAddress)){
-        cout<<"failed saving M image!"<<endl;
-    }else{
-        QPixmap pixmapM(MimageAddress);
-        pixmapM = pixmapM.scaled(picSize);
-        Mimages[pattern] = pixmapM;
-    }
-
-    fileStatus[pattern] = status;
-
-    std::ofstream outFile(dir+"\\AR4\\"+pattern+"\\info.txt", ios::out);
-    if(!outFile){
-        cout<<"failed to write in a new file."<<endl;
-    }
-    outFile<<hasBack*2+hasFront<<endl;
-    outFile.close();
-
-    cout<<status<<endl;
     endResetModel();
 }
 
 
 int datasetModel::getIndex(QString pattern){
-    return std::find(PatternNames.begin(), PatternNames.end(), pattern.toStdString()) - PatternNames.begin();
+    return std::find(patternNames.begin(), patternNames.end(), pattern.toStdString()) - patternNames.begin();
 }
 
 
 bool datasetModel::patternNameOverlapCheck(QString s){
     string s1 = s.toStdString();
-    return (find(PatternNames.begin(), PatternNames.end(), s1) != PatternNames.end());//1: overlapped!
+    return (find(patternNames.begin(), patternNames.end(), s1) != patternNames.end());//1: overlapped!
 }
+
+
+Pattern* datasetModel::patternPointer(string name){
+    vector<string>::iterator p = find(patternNames.begin(), patternNames.end(), name);
+    if(p != patternNames.end()){
+        return &patterns[p-patternNames.begin()];
+    }
+    else return NULL;
+}
+
+
+void datasetModel::searching(string s){
+    beginResetModel();
+    if(s == ""){
+        searchingMode = false;
+        endResetModel();
+        return;
+    }
+    indexMap.clear();
+    for(int i = 0; i < patternNames.size(); i++){
+        if(patternNames[i].find(s) != string::npos){
+            indexMap.push_back(i);
+        }
+    }
+    searchingMode = true;
+    endResetModel();
+}
+
+
+int datasetModel::foundIndexMap(int originalInd) const{
+    if(!searchingMode) return originalInd;
+    if(originalInd < indexMap.size())
+        return indexMap[originalInd];
+    else {
+        cout<<"larger than the indexmap size!"<<endl;
+        return 0;
+    }
+}
+
+
+
+Pattern* datasetModel::getTheNewOne(){
+    return &patterns[patterns.size()];
+}
+
+
+int datasetModel::getPatternSize(){
+    return patternNames.size();
+}
+
+
+bool datasetModel::hasPatternName(string name){
+    return find(patternNames.begin(), patternNames.end(), name) != patternNames.end();
+}
+
+
+int datasetModel::getTotalPatternNum(){
+    return patterns.size();
+}
+
+
+

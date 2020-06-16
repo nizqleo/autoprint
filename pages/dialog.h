@@ -5,7 +5,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <iostream>
-
+#include <API/api.h>
 
 class dataMaintainance;
 
@@ -19,9 +19,9 @@ class Dialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit Dialog( dataMaintainance* DM, QWidget *parent = nullptr);
+    explicit Dialog( dataMaintainance* DM, API* api, QWidget *parent = nullptr);
     ~Dialog();
-    void init(std::string pattern, std::string dir, int status);
+    void init(std::string pattern);
 
 private slots:
 
@@ -47,6 +47,8 @@ private slots:
 
 
     void on_comboBox_changed(const QString & s);
+
+
 signals:
     void confirmEditing(QString pattern, QString DFAR4Address, QString DBAR4Address,
                         QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
@@ -57,6 +59,7 @@ signals:
 private:
     dataMaintainance* DM;
 
+    API* api;
     Ui::Dialog *ui;
     int index;
     bool isEdit;
@@ -65,9 +68,9 @@ private:
     bool hasFront;
 
     QString originalPatternName;
-    QString Dir;
 
-    QString Pattern;
+    Pattern pattern;
+    QString patternName;
 
     QString DFAR4Address;
     QString DBAR4Address;

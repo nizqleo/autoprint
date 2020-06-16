@@ -5,10 +5,15 @@
 #include "pages\datamaintainance.h"
 #include "pages\printersetting.h"
 #include "pages\printtaskmanagement.h"
-
 #include "pages\startworking.h"
+
 #include "models\printer.h"
+
+#include "API\api.h"
+#include "API\localapi.h"
 #include "auxiliary.h"
+
+
 
 namespace Ui {
 class MainWindow;
@@ -25,8 +30,10 @@ public:
     string defaultDir;
 
 
-    vector<printer> printers;
+    vector<Printer> printers;
     void loadPrintersInfo();
+    API* api;
+    dataMaintainance* DM;
 
 public slots:
     void on_Exit_button_clicked();
@@ -40,7 +47,6 @@ public slots:
 
 private:
     Ui::MainWindow *ui;
-    dataMaintainance* DM;
     printerSetting* PS;
     printTaskManagement* PTM;
 

@@ -74,9 +74,20 @@ void SplitString(const string& s, std::vector<string>& v, const string& c)
     v.push_back(s.substr(pos1));
 }
 
+bool checkSameFile(QString targetPath, QString referencePath){
+    QFileInfo f1(targetPath);
+    if(!f1.exists()) return false;
+    QFileInfo f2(referencePath);
+    if(!f2.exists()) return false;
+
+    if(f1.filePath() == f2.filePath()) return true;
+    else return false;
+}
+
+
 int coverFileCopy(string targetPath, QString originalPath){
     QString QtargetPath = QString::fromStdString(targetPath);
-    if(QtargetPath == originalPath){
+    if(checkSameFile(QtargetPath, originalPath)){
         return 1;
     }
     QFileInfo fi(QtargetPath);
@@ -89,4 +100,39 @@ int coverFileCopy(string targetPath, QString originalPath){
     else{
         return 0;
     }
+}
+
+
+void Delay_MSec(unsigned int msec)
+{
+    QEventLoop loop;//定义一个新的事件循环
+    QTimer::singleShot(msec, &loop, SLOT(quit()));//创建单次定时器，槽函数为事件循环的退出函数
+    loop.exec();//事件循环开始执行，程序会卡在这里，直到定时时间到，本循环被退出
+}
+
+
+std::string UnicodeToUTF8(const std::wstring & wstr)
+{
+    std::string ret;
+    try {
+        std::wstring_convert< std::codecvt_utf8<wchar_t> > wcv;
+        ret = wcv.to_bytes(wstr);
+    } catch (const std::exception & e) {
+        std::cerr << e.what() << std::endl;
+    }
+    return ret;
+}
+
+std::wstring s2ws(const std::string& s)
+{
+    setlocale(LC_ALL, "chs");
+    const char* _Source = s.c_str();
+    size_t _Dsize = s.size() + 1;
+    wchar_t *_Dest = new wchar_t[_Dsize];
+    wmemset(_Dest, 0, _Dsize);
+    mbstowcs(_Dest,_Source,_Dsize);
+    std::wstring result = _Dest;
+    delete []_Dest;
+    setlocale(LC_ALL, "C");
+    return result;
 }

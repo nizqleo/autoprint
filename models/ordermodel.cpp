@@ -2,64 +2,87 @@
 
 #include "ordermodel.h"
 
+#include <algorithm>
 OrderModel::OrderModel(QObject *parent)
-    : QAbstractTableModel(parent)
-{
-    totalOrderNumber = 0;
-    totalJobNumber = 0;
+    : QAbstractTableModel(parent){
+    totalNum = 0;
 }
 
-void OrderModel::setOrderMap(const QMap<QString, QMap<QString, int>> &map)
-{
-    beginResetModel();
-    orderMap = map;
-    PI_init();
 
-    for(int i = 0;i < patternIndex.size(); i++){
-        std::cout<<patternIndex[i]<<' ';
-    }
-    std::cout<<std::endl;
-    endResetModel();
-}
-
-void OrderModel::setOrderArray(const QMap<QString, std::vector<std::vector<int>>> &array)
-{
-    beginResetModel();
-    orderArray = array;
-    std::cout<<"setArray"<<std::endl;
-    endResetModel();
+OrderModel::OrderModel(int ptrIdx, QObject *parent)
+    : QAbstractTableModel(parent), printerIndex(ptrIdx){
+    totalNum = 0;
 }
 
 //返回行数
 int OrderModel::rowCount(const QModelIndex & /* parent */) const
 {
-    return 8;
+    return tasklist.size();
 }
+
 //返回列数
 int OrderModel::columnCount(const QModelIndex & /* parent */) const
 {
-    return 6;
+    return 9;
 }
 
 //返回一个项的任意角色的值，这个项被指定为QModelIndex
 QVariant OrderModel::data(const QModelIndex &index, int role) const
 {
-    std::cout<<index.row()<<' '<<index.column()<<std::endl;
     if (!index.isValid())
         return QVariant();
 
     if (role == Qt::TextAlignmentRole) {
-        return int(Qt::AlignRight | Qt::AlignVCenter);
-    } else if (role == Qt::DisplayRole) {
-
-        if(index.column() == 5){
-            int sum = 0;
-            for(int i = 0; i < 5; i++){
-                sum+=orderArray[currentPattern][index.row()][i];
-            }
-            return sum;
+        return int(Qt::AlignHCenter | Qt::AlignVCenter);
+    }
+    else if (role == Qt::DisplayRole) {
+        switch (index.column()) {
+            case 0:
+                return QVariant(QString::fromStdString(tasklist[index.row()].pattern->name));
+            case 1:
+                if(!tasklist[index.row()].pattern->hasMimages)
+                    return QVariant("暂无效果图");
+                else return QVariant();
+            case 2:
+                return QVariant(printTypeString[tasklist[index.row()].type]);
+            case 3:
+                return QVariant(tasklist[index.row()].totalNum);
+            case 4:
+                if(tasklist[index.row()].fileReady)
+                    return QVariant("文件齐全");
+                else return QVariant("文件不全");
+            case 5:
+                switch (tasklist[index.row()].Tstatus) {
+                    case FINISHED:
+                        return QVariant("打印完毕");
+                    case PRINTING:
+                        return QVariant("正在打印");
+                    case PENDING:
+                        return QVariant("等待打印");
+                 }
+            case 6:
+                return QVariant(tasklist[index.row()].createTime);
+            case 7:
+                if(tasklist[index.row()].fromERP)
+                    return QVariant("ERP订单");
+                else return QVariant("备货");
+            case 8:
+                return QVariant(colorString[tasklist[index.row()].colorInfo]);
         }
-        return orderArray[currentPattern][index.row()][index.column()];
+
+    }
+    else if(role == Qt::DecorationRole){
+        if(index.column() == 1 &&  tasklist[index.row()].pattern->hasMimages){
+            return tasklist[index.row()].pattern->Mimages.scaled(QSize(100,100));
+        }
+    }
+    else if(role == Qt::BackgroundRole){
+        if(!tasklist[index.row()].fileReady){
+            return QColor(Qt::lightGray);
+        }
+        if(tasklist[index.row()].topped){
+            return QColor(Qt::darkGreen);
+        }
     }
     return QVariant();
 }
@@ -74,53 +97,29 @@ QVariant OrderModel::headerData(int section,
     if (role != Qt::DisplayRole)
         return QVariant();
     if(orientation == Qt::Vertical){//垂直
-        switch (section) {
-        case 0:
-            return QString("白色");
-        case 1:
-            return QString("黑色");
-        case 2:
-            return QString("粉色");
-        case 3:
-            return QString("蓝色");
-        case 4:
-            return QString("绿色");
-        case 5:
-            return QString("黄色");
-        case 6:
-            return QString("紫色");
-        case 7:
-            return QString("红色");
-        }
+        return QString();
     }
 
     switch (section) {//水平
     case 0:
-        return QString("S");
+        return QString("款号");
     case 1:
-        return QString("M");
+        return QString("效果图");
     case 2:
-        return QString("L");
+        return QString("打印类型");
     case 3:
-        return QString("XL");
+        return QString("总数量");
     case 4:
-        return QString("XXL");
+        return QString("AR4文件情况");
     case 5:
-        return QString("总计");
+        return QString("状态");
+    case 6:
+        return QString("添加时间");
+    case 7:
+        return QString("任务来源");
+    case 8:
+        return QString("任务颜色");
     }
-}
-
-
-void OrderModel::PI_init(){
-    patternIndex.push_back(0);
-    for (auto i = orderMap.begin(); i != orderMap.end(); i ++) {
-        totalOrderNumber += i->size();
-        for (auto j = i->begin(); j != i->end(); j ++) {
-            totalJobNumber += j.value();
-        }
-        patternIndex.push_back(i->size()+*patternIndex.rbegin());
-    }
-    std::cout<<totalJobNumber<<std::endl;
 }
 
 
@@ -130,32 +129,45 @@ void OrderModel::setCurrentPattern(QString pattern){
     endResetModel();
 }
 
+void OrderModel::move(int index, int direction){
+    beginResetModel();
+    if(index+direction < 0 || index+direction >= tasklist.size())
+        return;
+    swap(tasklist[index], tasklist[index+direction]);
+    endResetModel();
+}
 
-std::pair<QString, QString> OrderModel::OrderInfo(int index)const {
-    int patternNum = 0;
-    while(patternNum < patternIndex.size() && index > patternIndex[patternNum]){
-        patternNum++;
-    }
-    if(index < patternIndex[patternNum]){
-        patternNum-=1;
-    }
-    if(patternNum >= orderMap.size()){
-        std::cout<<"Larger than ordermap size"<<std::endl;
-        std::cout<<index<<std::endl;
-    }
-    QString pattern = (orderMap.begin() + patternNum).key();
+void OrderModel::update(int index){
+    beginResetModel();
+    tasklist[index].update();
+    endResetModel();
+}
 
-    if(patternNum >= patternIndex.size()){
-        std::cout<<"Larger than ordermap size"<<std::endl;
+void OrderModel::addOrder(Order o){
+    totalNum += o.number;
+    //search for tasks with same color, same pattern, (same timestamp)(later)
+    for(int i = 0; i < tasklist.size(); i++){
+        if(tasklist[i].name == o.pattern && tasklist[i].colorInfo == o.color && tasklist[i].fromERP == o.fromERP){
+            tasklist[i].Add(o);
+            return;
+        }
     }
-    int clothNum = index - patternIndex[patternNum];
 
-    if(clothNum >= orderMap[pattern].size()){
-        std::cout<<"Larger than orderMap[pattern] size"<<std::endl;
-    }
-    QString cloth = (orderMap[pattern].begin()+clothNum).key();
-
-    return std::make_pair(pattern, cloth);
+    Task temp(o);
+    temp.printerIdx = printerIndex;
+    tasklist.push_back(temp);
 }
 
 
+
+void OrderModel::sortTable(){
+    std::sort(tasklist.begin(), tasklist.end(), less<Task>());
+}
+
+
+void OrderModel::update(){
+    beginResetModel();
+    sortTable();
+
+    endResetModel();
+}

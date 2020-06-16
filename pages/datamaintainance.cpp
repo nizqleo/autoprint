@@ -8,7 +8,7 @@ dataMaintainance::dataMaintainance(MainWindow *mainwindow, QWidget *parent) :
     ui->setupUi(this);
 
     //自定义表模型
-    DModel = new datasetModel;
+    DModel = new datasetModel(mainwindow->api);
     ui->tableView->setModel(DModel);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch );
     ui->tableView->horizontalHeader()->setSectionResizeMode(1,QHeaderView::ResizeToContents );
@@ -25,6 +25,8 @@ dataMaintainance::dataMaintainance(MainWindow *mainwindow, QWidget *parent) :
     QPixmap pixmap(".\\data\\logo.png");
     ui->logoLabel->setPixmap(pixmap);
     ui->logoLabel->show();
+    ui->totalNum_label->setNum(DModel->getTotalPatternNum());
+    ui->search_lineEdit->setPlaceholderText("输入款号搜索");
 }
 
 dataMaintainance::~dataMaintainance()
@@ -32,7 +34,7 @@ dataMaintainance::~dataMaintainance()
     delete ui;
 }
 
-void dataMaintainance::on_Return_button_clicked(){
+void dataMaintainance::on_Exit_button_clicked(){
     MW->show();
     this->hide();
 }
@@ -47,30 +49,31 @@ void dataMaintainance::on_Delete_button_clicked(){
         return ;
     ui->Edit_button->setEnabled(false);
     ui->Delete_button->setEnabled(false);
+
     DModel->deleteItem(row);
+    ui->totalNum_label->setNum(DModel->getTotalPatternNum());
 }
 
 void dataMaintainance::on_Edit_button_clicked(){
     int row = ui->tableView->currentIndex().row();
-    dialog = new Dialog(this);
+    dialog = new Dialog(this, MW->api);
     std::string pattern = DModel->getItem(row);
-    dialog->init(pattern, DModel->dir, DModel->fileStatus[pattern]);
+    dialog->init(pattern);
     connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
             this, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
     connect(dialog, SIGNAL(PatternNameChanged(QString)), this, SLOT(delete_files(QString)));
     dialog->show();
+    ui->Edit_button->setEnabled(false);
+    ui->Delete_button->setEnabled(false);
 }
 
 void dataMaintainance::on_Add_button_clicked(){
-    dialog = new Dialog(this);
+    dialog = new Dialog(this, MW->api);
     connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
             this, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
     dialog->show();
 }
-void dataMaintainance::on_Search_button_clicked(){
-    MW->show();
-    this->hide();
-}
+
 
 void dataMaintainance::save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
                                   QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
@@ -79,6 +82,7 @@ void dataMaintainance::save_files(QString pattern, QString DFAR4Address, QString
     DModel->save_files( pattern.toStdString(),  DFAR4Address, DBAR4Address,
                         LFAR4Address, LBAR4Address, PimageAddress,
                         MimageAddress, hasBack, hasFront);
+    ui->totalNum_label->setNum(DModel->getTotalPatternNum());
 }
 
 void dataMaintainance::on_tableView_clicked(){
@@ -89,6 +93,7 @@ void dataMaintainance::on_tableView_clicked(){
 void dataMaintainance::delete_files(QString pattern){
 
     DModel->deleteItem(DModel->getIndex(pattern));
+    ui->totalNum_label->setNum(DModel->getTotalPatternNum());
 }
 
 
@@ -105,4 +110,10 @@ void dataMaintainance::on_settingPage_button_clicked(){
 
 bool dataMaintainance::patternNameOverlapCheck(QString s){
     return DModel->patternNameOverlapCheck(s);
+}
+
+
+void dataMaintainance::on_search_lineEdit_textEdited(QString s){
+
+    DModel->searching(s.toStdString());
 }

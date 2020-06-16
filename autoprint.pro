@@ -25,42 +25,55 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        API/api.cpp \
+        API/localapi.cpp \
         auxiliary.cpp \
         main.cpp \
         mainwindow.cpp \
+        models/colortask.cpp \
+        models/colortaskmodel.cpp \
         models/datasetmodel.cpp \
         models/order.cpp \
         models/ordermodel.cpp \
         models/pattern.cpp \
         models/printer.cpp \
         models/task.cpp \
+        models/taskmodel.cpp \
+        pages/addprinttask.cpp \
         pages/datamaintainance.cpp \
         pages/dialog.cpp \
         pages/pickuplist.cpp \
         pages/printersetting.cpp \
-        pages/printing.cpp \
         pages/printtaskmanagement.cpp \
-        pages/startworking.cpp
+        pages/startworking.cpp \
+        pages/temp.cpp
 
 HEADERS += \
+        API/api.h \
+        API/localapi.h \
         auxiliary.h \
         mainwindow.h \
+        models/colortask.h \
+        models/colortaskmodel.h \
         models/datasetmodel.h \
         models/order.h \
         models/ordermodel.h \
         models/pattern.h \
         models/printer.h \
         models/task.h \
+        models/taskmodel.h \
+        pages/addprinttask.h \
         pages/datamaintainance.h \
         pages/dialog.h \
         pages/pickuplist.h \
         pages/printersetting.h \
-        pages/printing.h \
         pages/printtaskmanagement.h \
-        pages/startworking.h
+        pages/startworking.h \
+        pages/temp.h
 
 FORMS += \
         mainwindow.ui \
+        pages/addprinttask.ui \
         pages/datamaintainance.ui \
         pages/dialog.ui \
         pages/pickuplist.ui \

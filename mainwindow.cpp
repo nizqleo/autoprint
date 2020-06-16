@@ -18,6 +18,13 @@ MainWindow::MainWindow(QWidget *parent) :
 //    SW = new startWorking(this);
 
     defaultDir = ".\\";
+
+
+    /*************************************/
+    // new a API based on progress.
+    api = new localAPI(".\\data");
+
+    /*************************************/
 }
 
 
@@ -33,7 +40,7 @@ void MainWindow::loadPrintersInfo(){
     while (getline(inFile, lineStr))
     {
         std::cout<<lineStr<<std::endl;
-        printer temp(lineStr);
+        Printer temp(lineStr);
         printers.push_back(temp);
     }
 }

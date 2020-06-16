@@ -11,7 +11,7 @@
 #include <QDebug>
 #include "pages\printtaskmanagement.h"
 #include "pages\printersetting.h"
-
+#include "models\task.h"
 
 class MainWindow;
 namespace Ui {
@@ -27,15 +27,15 @@ public:
     ~dataMaintainance();
 
     QString searchDir;
+    datasetModel* DModel;
     bool patternNameOverlapCheck(QString s);
 
 private slots:
-    void on_Return_button_clicked();
     void on_Add_button_clicked();
     void on_Delete_button_clicked();
     void on_Edit_button_clicked();
+    void on_Exit_button_clicked();
 
-    void on_Search_button_clicked();
     void save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
                     QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
                     QString MimageAddress, bool hasBack, bool hasFront);
@@ -46,6 +46,8 @@ private slots:
     void on_taskPage_button_clicked();
     void on_settingPage_button_clicked();
 
+    void on_search_lineEdit_textEdited(QString s);
+
 signals:
     void taskpageopen();
     void settingpageopen();
@@ -55,12 +57,15 @@ private:
     Ui::dataMaintainance *ui;
     MainWindow *MW;
     QStandardItemModel* model;
-    datasetModel* DModel;
+
     Dialog* dialog;
 
 
     printTaskManagement* PTM;
     printerSetting* PS;
+
+
 };
+
 
 #endif // DATAMAINTAINANCE_H

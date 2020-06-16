@@ -1,95 +1,25 @@
 #include "startworking.h"
 #include "ui_startworking.h"
 
-startWorking::startWorking(QMainWindow* MW, QWidget *parent) :
+
+startWorking::startWorking(QWidget *parent) :
     QWidget(parent),
-    MW(MW),
     ui(new Ui::startWorking)
 {
     ui->setupUi(this);
-
-
-    ifstream inFile(".\\data\\order.csv", ios::in);
-//    ifstream inFile("C:\\Users\\nzq82\\source\\QtRepos\\data\\order.csv", ios::in);
-    if(!inFile){
-        cout<<"failed to open order file."<<endl;
-    }
-    string lineStr;
-    QMap<QString, QMap<QString, int>> OrderMap;
-    QMap<QString, std::vector<std::vector<int>>> orderArray;
-    PUTable.clear();
-//    totalNum.clear();
-    std::vector<int> temp1;
-    temp1.resize(5, 0);
-    std::vector<std::vector<int>> temp;
-    temp.resize(8, temp1);
-    while (getline(inFile, lineStr))
-    {
-        stringstream ss(lineStr);
-        string color,size, num;
-
-        getline(ss, color, ',');
-        QString Pattern = QString::fromStdString(color);
-        getline(ss, color, ',');
-        getline(ss, size, ',');
-        QString cloth = QString::fromStdString(color+size);
-        getline(ss, num, ',');
-        int d = atoi(num.c_str());
-        OrderMap[Pattern][cloth] += d;
-        if(orderArray.find(Pattern) == orderArray.end()){
-            orderArray[Pattern] = temp;
-            Patterns.push_back(Pattern);
-        }
-        orderArray[Pattern][ColorMap(color)][SizeMap(size)] += d;
-        totalNum[Pattern] += d;
-        PUTable[cloth]+=d;
-    }
-    cout<<"file reading ready."<<endl;
-
-    OM = new OrderModel;
-    OM->setCurrentPattern(Patterns[currentPatternIndex]);
-    OM->setOrderMap(OrderMap);
-    OM->setOrderArray(orderArray);
-
-    ui->tableView->setModel(OM);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch );
-    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents );
-
-    ui->printerIDLabel->setNum(1);
-    ui->patternIDLabel->setText(Patterns[currentPatternIndex]);
-    ui->TotalNumLabel->setNum(totalNum[Patterns[currentPatternIndex]]);
 }
 
-int startWorking::SizeMap(string size){
-    if(size == "S")
-        return 0;
-    if(size == "M")
-        return 1;
-    if(size == "L")
-        return 2;
-    if(size == "XL")
-        return 3;
-    if(size == "XXL")
-        return 4;
-}
 
-int startWorking::ColorMap(string size){
-    if(size == "W")
-        return 0;
-    if(size == "B")
-        return 1;
-    if(size == "P")
-        return 2;
-    if(size == "B")
-        return 3;
-    if(size == "G")
-        return 4;
-    if(size == "Y")
-        return 5;
-    if(size == "U")
-        return 6;
-    if(size == "R")
-        return 7;
+
+startWorking::startWorking(Task* t, modes m, int i, QWidget *parent) :
+    QWidget(parent),
+    ui(new Ui::startWorking), task(t),index(i),mode(m)
+{
+    ui->setupUi(this);
+
+    printerIndex = task->printerIdx;
+    init();
+
 }
 
 
@@ -100,42 +30,90 @@ startWorking::~startWorking()
 
 
 void startWorking::on_Return_button_clicked(){
-    MW->show();
-    this->hide();
-}
-
-
-void startWorking::on_PL_button_clicked(){
-
-    PickUpList* PUL = new PickUpList(PUTable);
-//    cout<<PUTable["BXL"]<<endl;
-
-    PUL->show();
-}
-
-
-void startWorking::on_CP_button_clicked(){
-    Printing* PT = new Printing(OM, this);
-
-    PT->show();
-    PT->send_AR4_to_printer();
+    this->close();
 }
 
 void startWorking::on_lastPattern_button_clicked(){
-    if(currentPatternIndex == 0)
-        return;
-    currentPatternIndex--;
-    OM->setCurrentPattern(Patterns[currentPatternIndex]);
-    ui->patternIDLabel->setText(Patterns[currentPatternIndex]);
-    ui->TotalNumLabel->setNum(totalNum[Patterns[currentPatternIndex]]);
+    emit asking_for_adjacent(index-1);
 }
 
 void startWorking::on_nextPattern_button_clicked(){
-    if(currentPatternIndex == Patterns.size()-1)
-        return;
-    currentPatternIndex++;
-    OM->setCurrentPattern(Patterns[currentPatternIndex]);
-    ui->patternIDLabel->setText(Patterns[currentPatternIndex]);
-    ui->TotalNumLabel->setNum(totalNum[Patterns[currentPatternIndex]]);
+    if(mode == WORKING){
+        QMessageBox::StandardButton reply = QMessageBox::question(NULL, "确认完成", "是否确认本单已经完成？", QMessageBox::Yes | QMessageBox::No );
+        if(reply == QMessageBox::No)
+            return ;
+        else{
+            cout<<"working next pattern"<<endl;
+            task->Tstatus = FINISHED;
+            emit asking_for_adjacent(index+1);
+        }
+    }
+    else{
+        cout<<"showing next pattern"<<endl;
+        emit asking_for_adjacent(index+1);
+    }
 }
 
+void startWorking::receiving_new_task(Task* t, int i){
+    if(t == NULL){
+        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "无任务", "无更多任务！", QMessageBox::Yes );
+        return ;
+    }
+    index = i;
+    task = t;
+    init();
+}
+
+// init operations based on task specifing.
+void startWorking::init(){
+    //cout<<"init called"<<endl;
+    TM = new TaskModel(*task);
+
+    ui->tableView->setModel(TM);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch );
+    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch );
+
+    ui->printerIDLabel->setNum(printerIndex);
+    ui->patternIDLabel->setText(QString::fromStdString(task->name));
+
+    if(task->pattern->hasMimages){
+        ui->M_label->setPixmap(task->pattern->Mimages.scaled(QSize(200, 200)));
+        ui->M_label->show();
+    }
+    if(task->pattern->hasPimages){
+        ui->P_label->setPixmap(task->pattern->Pimages.scaled(QSize(200, 200)));
+        ui->P_label->show();
+    }
+
+    if(mode == WORKING){
+        // send files!!!!
+        cout<<"sending files"<<endl;
+
+        ui->file_label->setText("上传中");
+        QPalette red;
+        red.setColor(QPalette::WindowText,Qt::red);
+        ui->file_label->setPalette(red);
+        // when finished loading
+
+        ui->file_label->setText("上传完毕");
+        QPalette green;
+        green.setColor(QPalette::WindowText,Qt::darkGreen);
+        ui->file_label->setPalette(green);
+
+        task->Tstatus = PRINTING;
+
+    }else{
+        if(task->fileReady){
+            ui->file_label->setText("文件齐全");
+            QPalette green;
+            green.setColor(QPalette::WindowText,Qt::darkGreen);
+            ui->file_label->setPalette(green);
+        }
+        else{
+            ui->file_label->setText("文件不齐");
+            QPalette red;
+            red.setColor(QPalette::WindowText,Qt::red);
+            ui->file_label->setPalette(red);
+        }
+    }
+}

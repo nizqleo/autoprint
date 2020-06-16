@@ -4,39 +4,58 @@
 #include <QAbstractTableModel>
 #include <QMap>
 #include <vector>
+#include <set>
 #include <iostream>
 
+
+#include "task.h"
+#include <QColor>
+
+
+/* OrderModel -- class for a task list.
+ *
+ * Collect the information while in charge of presenting it with a QtableView.
+ *
+ * Printer and OrderModels are 1-1 coresponded.
+ *
+ * A OrderModel has a list of OrderModel. It's constructed after the tasks are all collected and,
+ * most importantly, arranged to a certain printer. The printTaskManagement page will do the
+ * collect & arrange.
+ *
+ */
 class OrderModel : public QAbstractTableModel
 {
 public:
     OrderModel(QObject *parent = 0);
+    OrderModel(int ptrIdx, QObject *parent = 0);
 
-    void setOrderMap(const QMap<QString, QMap<QString, int>> &map);
-    void setOrderArray(const QMap<QString, std::vector<std::vector<int>>> &array);
     int rowCount(const QModelIndex &parent) const;
     int columnCount(const QModelIndex &parent) const;
     QVariant data(const QModelIndex &index, int role) const;
     QVariant headerData(int section, Qt::Orientation orientation,
                         int role) const;
 
-    void PI_init();
-    std::pair<QString, QString> OrderInfo(int index) const;
     void setCurrentPattern(QString pattern);
 
-    int totalJobNumber;
     QString currentPattern;
 
+    void move(int index, int direction);
+    void update(int index);
+    void update();
+    void addOrder(Order o);
+
+    friend class printTaskManagement;
+
+    int printerIndex;
+    vector<Task> tasklist;
+    int totalNum;
+
+    void sortTable();
 
 private:
 
-    std::vector<int> patternIndex;
-    int totalOrderNumber;
 
 
-
-public:
-    QMap<QString, QMap<QString, int>> orderMap;
-    QMap<QString, std::vector<std::vector<int>>> orderArray;
 };
 
 #endif

@@ -3,8 +3,8 @@
 #include "pages\datamaintainance.h"
 
 
-Dialog::Dialog(dataMaintainance* DM, QWidget *parent) :
-    QDialog(parent),DM(DM),
+Dialog::Dialog(dataMaintainance* DM, API* api, QWidget *parent) :
+    QDialog(parent),DM(DM),api(api),
     ui(new Ui::Dialog)
 {
     ui->setupUi(this);
@@ -31,8 +31,6 @@ Dialog::Dialog(dataMaintainance* DM, QWidget *parent) :
     ui->LFtool_button->setEnabled(true);
     ui->DF_lineEdit->setEnabled(true);
     ui->LF_lineEdit->setEnabled(true);
-    //dir = "C:\\Users\\nzq82\\source\\QtRepos";
-//    dir = ".";
 }
 
 Dialog::~Dialog()
@@ -40,16 +38,16 @@ Dialog::~Dialog()
     delete ui;
 }
 
-void Dialog::init(std::string pattern, std::string dir, int status){// happens only in editing
+void Dialog::init(std::string name){// happens only in editing
     setWindowTitle(tr("修改条目"));
     isEdit=true;
-    Pattern = QString::fromStdString(pattern);
-    ui->Pattern_lineEdit->setText(Pattern);
-    originalPatternName = Pattern;
-    Dir = QString::fromStdString(dir);
+    pattern = api->readPatternData(name);
 
-    if (status<48) {//
-        if((status>>5) & 1 == 1){ //10 只有后
+    ui->Pattern_lineEdit->setText(QString::fromStdString(name));
+    originalPatternName = QString::fromStdString(name);
+
+    if (pattern.status < 48) {//
+        if((pattern.status>>5) & 1 == 1){ //10 只有后
             ui->comboBox->setCurrentIndex(2);
             hasFront = false;
 
@@ -72,58 +70,55 @@ void Dialog::init(std::string pattern, std::string dir, int status){// happens o
         }
     }
 
-    if(((status>>3) & 1) == 1)
-        LFAR4Address = QString::fromStdString(dir + "\\AR4\\"+pattern+"\\LF.txt");
-    if(((status>>2) & 1) == 1)
-        DFAR4Address = QString::fromStdString(dir + "\\AR4\\"+pattern+"\\DF.txt");
-    if(((status>>1) & 1) == 1)
-        LBAR4Address = QString::fromStdString(dir + "\\AR4\\"+pattern+"\\LB.txt");
-    if((status & 1) == 1)
-        DBAR4Address = QString::fromStdString(dir + "\\AR4\\"+pattern+"\\DB.txt");
+    if(((pattern.status>>3) & 1) == 1)
+        LFAR4Address = api->showFileDirinDatabase(name, 1);
+    if(((pattern.status>>2) & 1) == 1)
+        DFAR4Address = api->showFileDirinDatabase(name, 0);
+    if(((pattern.status>>1) & 1) == 1)
+        LBAR4Address = api->showFileDirinDatabase(name, 2);
+    if((pattern.status & 1) == 1)
+        DBAR4Address = api->showFileDirinDatabase(name, 3);
 
 
-    QFileInfo fileInfo;
-    PimageAddress = QString::fromStdString(dir + "\\image\\"+pattern+"\\P.jpg");
-    fileInfo.setFile(PimageAddress);
-    if(!fileInfo.isFile())  PimageAddress = "";
+    if(pattern.hasPimages)
+        PimageAddress = api->showFileDirinDatabase(name, 4);
+    else PimageAddress = "";
 
-    MimageAddress = QString::fromStdString(dir + "\\image\\"+pattern+"\\M.jpg");
-    fileInfo.setFile(MimageAddress);
-    if(!fileInfo.isFile())  MimageAddress = "";
-
-
+    if(pattern.hasMimages)
+        MimageAddress = api->showFileDirinDatabase(name, 5);
+    else MimageAddress = "";
 
     update();
 }
 
 void Dialog::on_DFtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择深色前片AR4文件"), DM->searchDir, tr("文本文件 (*.txt),*.txt;; AR4文件 (*.ar4),*.ar4"));
+    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择深色前片AR4文件"), DM->searchDir, tr("全部文件 （*.*）, *.*;; ARX4文件 (*.arx4),*.arx4;; ARXP文件 (*.arxp),*.arxp"));
     DFAR4Address = fileNames;
     update();
 }
 void Dialog::on_DBtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择深色后片AR4文件"), DM->searchDir,tr("文本文件 (*.txt),*.txt;; AR4文件 (*.ar4),*.ar4"));
+    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择深色后片AR4文件"), DM->searchDir,tr("全部文件 （*.*）, *.*;;   ARX4文件 (*.arx4),*.arx4;;ARXP文件 (*.arxp),*.arxp"));
     DBAR4Address = fileNames;
     update();
 }
 void Dialog::on_LFtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择浅色前片AR4文件"), DM->searchDir,tr("文本文件 (*.txt),*.txt;; AR4文件 (*.ar4),*.ar4"));
+    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择浅色前片AR4文件"), DM->searchDir,tr("全部文件 （*.*）, *.*;;  ARX4文件 (*.arx4),*.arx4;;ARXP文件 (*.arxp),*.arxp"));
     LFAR4Address = fileNames;
     update();
 }
 void Dialog::on_LBtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择浅色后片AR4文件"), DM->searchDir,tr("文本文件 (*.txt),*.txt;; AR4文件 (*.ar4),*.ar4"));
+    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择浅色后片AR4文件"), DM->searchDir,tr("全部文件 （*.*）, *.*;;   ARX4文件 (*.arx4),*.arx4;;ARXP文件 (*.arxp),*.arxp"));
     LBAR4Address = fileNames;
     update();
 }
 
 void Dialog::on_Pimage_toolButton_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择生产版单文件"), DM->searchDir,  tr("图片文件(*png *jpg)"));
+    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择生产版单文件"), DM->searchDir,  tr("全部文件 （*.*）, *.*;;图片文件(*png *jpg)"));
     PimageAddress = fileNames;
     update();
 }
 void Dialog::on_Mimage_toolButton_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择效果图/模特图文件"), DM->searchDir, tr("图片文件(*png *jpg)"));
+    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择效果图/模特图文件"), DM->searchDir, tr("全部文件 （*.*）, *.*;;图片文件(*png *jpg)"));
     MimageAddress = fileNames;
     update();
 }
@@ -182,7 +177,7 @@ void Dialog::on_comboBox_changed(const QString & s){
 }
 
 void Dialog::update(){
-    Pattern = ui->Pattern_lineEdit->text();
+    patternName = ui->Pattern_lineEdit->text();
 
     ui->DF_lineEdit->setText(DFAR4Address);
     ui->DB_lineEdit->setText(DBAR4Address);
@@ -218,7 +213,7 @@ void Dialog::on_ConfirmButton_clicked(){
         if (reply == QMessageBox::No)
             return ;
         else{
-            emit confirmEditing(Pattern, DFAR4Address,DBAR4Address,LFAR4Address,LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
+            emit confirmEditing(patternName, DFAR4Address,DBAR4Address,LFAR4Address,LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
             if(PatternChanged){
                 emit PatternNameChanged(originalPatternName);
             }
@@ -226,7 +221,7 @@ void Dialog::on_ConfirmButton_clicked(){
         }
     }
     if(fileStatus == 1){ // no file covering
-        emit confirmEditing(Pattern, DFAR4Address,DBAR4Address,LFAR4Address,LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
+        emit confirmEditing(patternName, DFAR4Address,DBAR4Address,LFAR4Address,LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
         if(isEdit && PatternChanged){
             emit PatternNameChanged(originalPatternName);
         }
@@ -248,10 +243,14 @@ void Dialog::on_CancelButton_clicked(){
 
 void Dialog::on_Pattern_lineEdit_textEdited(QString s){
 
-    Pattern = s;
+    patternName = s;
     // check
     if(DM->patternNameOverlapCheck(s)){
         ui->label_error->setText("款号和已有款号冲突！");
+        QPalette pe;
+        pe.setColor(QPalette::WindowText,Qt::red);
+        ui->label_error->setPalette(pe);
+
         ui->ConfirmButton->setEnabled(false);
     }
     else{
@@ -270,10 +269,12 @@ void Dialog::on_DF_lineEdit_textEdited(QString s){
 void Dialog::on_DB_lineEdit_textEdited(QString s){
     DBAR4Address = s;
     update();
-}void Dialog::on_LF_lineEdit_textEdited(QString s){
+}
+void Dialog::on_LF_lineEdit_textEdited(QString s){
     LFAR4Address = s;
     update();
-}void Dialog::on_LB_lineEdit_textEdited(QString s){
+}
+void Dialog::on_LB_lineEdit_textEdited(QString s){
     LBAR4Address = s;
     update();
 }
@@ -288,6 +289,10 @@ void Dialog::on_Mimage_lineEdit_textEdited(QString s){
 }
 
 int Dialog::fileReadyCheck(){
+    if(ui->Pattern_lineEdit->text() == ""){
+        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "无款号", "请输入款号！", QMessageBox::Yes);
+        return 0;
+    }
     QString errorList = "";
     int fileErrorNum = 0;
     QFileInfo fileInfo;
@@ -320,19 +325,18 @@ int Dialog::fileReadyCheck(){
         if (reply == QMessageBox::No)
             return 0;
         else{
+            string pattern = patternName.toStdString();
             if(hasFront){
                 fileInfo.setFile(DFAR4Address);
                 if(!fileInfo.isFile())  DFAR4Address = "";
                 else {
-                    fileInfo.setFile(Dir + "\\AR4\\"+Pattern+"\\DF.txt");
-                    if(fileInfo.isFile())  hasFileCover = true;
+                    hasFileCover |= api->checkFileOverlap(pattern, 0, DFAR4Address);
                 }
 
                 fileInfo.setFile(LFAR4Address);
                 if(!fileInfo.isFile())  LFAR4Address = "";
                 else {
-                    fileInfo.setFile(Dir + "\\AR4\\"+Pattern+"\\LF.txt");
-                    if(fileInfo.isFile())  hasFileCover = true;
+                    hasFileCover |= api->checkFileOverlap(pattern, 1, LFAR4Address);
                 }
             }
 
@@ -340,28 +344,24 @@ int Dialog::fileReadyCheck(){
                 fileInfo.setFile(LBAR4Address);
                 if(!fileInfo.isFile())  LBAR4Address = "";
                 else {
-                    fileInfo.setFile(Dir + "\\AR4\\"+Pattern+"\\LB.txt");
-                    if(fileInfo.isFile())  hasFileCover = true;
+                    hasFileCover |= api->checkFileOverlap(pattern, 2, LBAR4Address);
                 }
                 fileInfo.setFile(DBAR4Address);
                 if(!fileInfo.isFile())  DBAR4Address = "";
                 else {
-                    fileInfo.setFile(Dir + "\\AR4\\"+Pattern+"\\DB.txt");
-                    if(fileInfo.isFile())  hasFileCover = true;
+                    hasFileCover |= api->checkFileOverlap(pattern, 3, DBAR4Address);
                 }
             }
 
             fileInfo.setFile(PimageAddress);
             if(!fileInfo.isFile())  PimageAddress = "";
             else {
-                fileInfo.setFile(Dir + "\\image\\"+Pattern+"\\P.jpg");
-                if(fileInfo.isFile())  hasFileCover = true;
+                hasFileCover |= api->checkFileOverlap(pattern, 4, PimageAddress);
             }
             fileInfo.setFile(MimageAddress);
             if(!fileInfo.isFile())  MimageAddress = "";
             else {
-                fileInfo.setFile(Dir + "\\image\\"+Pattern+"\\M.jpg");
-                if(fileInfo.isFile())  hasFileCover = true;
+                hasFileCover |= api->checkFileOverlap(pattern, 5, MimageAddress);
             }
 
             if(hasFileCover)

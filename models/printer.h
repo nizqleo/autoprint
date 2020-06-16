@@ -7,11 +7,11 @@
 
 using namespace std;
 
-class printer
+class Printer
 {
 public:
-    printer(string info);
-    printer();
+    Printer(string info);
+    Printer();
 
     void load(string info);
     string save();

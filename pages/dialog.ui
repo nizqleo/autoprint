@@ -31,7 +31,13 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="Pattern_lineEdit"/>
+        <widget class="QLineEdit" name="Pattern_lineEdit">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="label_error">
@@ -102,9 +108,9 @@
          <property name="font">
           <font>
            <pointsize>10</pointsize>
-           <weight>75</weight>
-           <bold>true</bold>
-           <underline>true</underline>
+           <weight>50</weight>
+           <bold>false</bold>
+           <underline>false</underline>
           </font>
          </property>
          <property name="frameShape">
@@ -164,6 +170,11 @@
            <height>0</height>
           </size>
          </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
         </widget>
        </item>
        <item>
@@ -190,7 +201,13 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="DB_lineEdit"/>
+        <widget class="QLineEdit" name="DB_lineEdit">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QToolButton" name="DBtool_button">
@@ -248,6 +265,11 @@
            <height>0</height>
           </size>
          </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
         </widget>
        </item>
        <item>
@@ -276,7 +298,13 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="LB_lineEdit"/>
+          <widget class="QLineEdit" name="LB_lineEdit">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+          </widget>
          </item>
          <item>
           <widget class="QToolButton" name="LBtool_button">
@@ -311,6 +339,11 @@
            <height>0</height>
           </size>
          </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
         </widget>
        </item>
        <item>
@@ -337,7 +370,13 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="Pimage_lineEdit"/>
+        <widget class="QLineEdit" name="Pimage_lineEdit">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QToolButton" name="Pimage_toolButton">

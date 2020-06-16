@@ -11,11 +11,25 @@
 #include <QFileInfo>
 #include <fstream>
 #include <direct.h>
+#include "API/api.h"
+#include "models/pattern.h"
+#include "models/task.h"
+#include <map>
 
+
+/* datasetModel -- a class of pattern dataset.
+ *
+ * Constructed by when the program start running.
+ *
+ * Should be able to connect to the most complete dataset.(might be online
+ * or local)
+ *
+ *
+ */
 class datasetModel : public QAbstractTableModel
 {
 public:
-    datasetModel(QObject *parent = 0);
+    datasetModel(API* api ,QObject *parent = 0);
 
     void readDataset();
     int rowCount(const QModelIndex &parent) const;
@@ -25,36 +39,42 @@ public:
                         int role) const;
 
     void deleteItem(int index);
-    std::string getItem(int index);
+    string getItem(int index);
     int getIndex(QString pattern);
-    //std::string dir = "C:\\Users\\nzq82\\source\\QtRepos\\data";
-    std::string dir = ".\\data";
+    //string dir = "C:\\Users\\nzq82\\source\\QtRepos\\data";
+    string dir = ".\\data";
 
-
-    void save_files(std::string pattern, QString DFAR4Address, QString DBAR4Address,
+    // do file savings
+    // and update informations
+    void save_files(string pattern, QString DFAR4Address, QString DBAR4Address,
                     QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
                     QString MimageAddress, bool hasBack, bool hasFront);
     bool patternNameOverlapCheck(QString s);
 
-    /* 111111 == 63
-     * 1     : has back 32
-     *  1    : has front 16
-     *   1   : has LF 8
-     *    1  : has DF 4
-     *     1 : has LB 2
-     *      1: has DB 1
-     */
-    QMap<std::string, int> fileStatus;
+    Pattern* patternPointer(string name);
+
+    void searching(string s);
+
+    int foundIndexMap(int originalInd) const;
+    Pattern* getTheNewOne();
+
+    int getPatternSize();
+    bool hasPatternName(string name);
+
+    int getTotalPatternNum();
+
+    friend class addPrintTask;
+
 private:
 
-    std::vector<std::string> PatternNames;
-    QMap<std::string, QPixmap> Pimages;
-    QMap<std::string, QPixmap> Mimages;
+    vector<int> indexMap;
 
+    vector<string> patternNames;
+    vector<Pattern> patterns;
 
+    bool searchingMode;
 
-
-
+    API* api;
 };
 
 #endif
