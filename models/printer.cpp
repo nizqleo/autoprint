@@ -1,18 +1,20 @@
 #include "printer.h"
 
-Printer::Printer(string info)
+Printer::Printer(QString info, int ID):printerID(ID)
 {
     load(info);
 }
 
 
 
-void Printer::load(string info){
-    vector<string> infos;
+void Printer::load(QString info){
+
+    vector<QString> infos;
     SplitString(info, infos, ",");
-    printerID = atoi(infos[0].c_str());
-    availble =  atoi(infos[1].c_str());
-    darkprint =  atoi(infos[2].c_str());
+    name = infos[0];
+    availble = infos[1].toInt();
+    darkprint = infos[2].toInt();
+    pro = infos[3].toInt();
 }
 
 string Printer::save(){

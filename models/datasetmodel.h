@@ -14,7 +14,7 @@
 #include "API/api.h"
 #include "models/pattern.h"
 #include "models/task.h"
-#include <map>
+
 
 
 /* datasetModel -- a class of pattern dataset.
@@ -39,27 +39,27 @@ public:
                         int role) const;
 
     void deleteItem(int index);
-    string getItem(int index);
+    QString getItem(int index);
     int getIndex(QString pattern);
     //string dir = "C:\\Users\\nzq82\\source\\QtRepos\\data";
-    string dir = ".\\data";
+    QString dir = ".\\data";
 
     // do file savings
     // and update informations
-    void save_files(string pattern, QString DFAR4Address, QString DBAR4Address,
+    void save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
                     QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
                     QString MimageAddress, bool hasBack, bool hasFront);
     bool patternNameOverlapCheck(QString s);
 
-    Pattern* patternPointer(string name);
+    Pattern* patternPointer(QString name);
 
-    void searching(string s);
+    void searching(QString s);
 
     int foundIndexMap(int originalInd) const;
     Pattern* getTheNewOne();
 
     int getPatternSize();
-    bool hasPatternName(string name);
+    bool hasPatternName(QString name);
 
     int getTotalPatternNum();
 
@@ -69,7 +69,7 @@ private:
 
     vector<int> indexMap;
 
-    vector<string> patternNames;
+    vector<QString> patternNames;
     vector<Pattern> patterns;
 
     bool searchingMode;

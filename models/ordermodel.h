@@ -40,17 +40,22 @@ public:
     QString currentPattern;
 
     void move(int index, int direction);
-    void update(int index);
+    void update(QString name);
     void update();
-    void addOrder(Order o);
+    void addOrder(Order* o);
+
+    void numberCheck();
 
     friend class printTaskManagement;
 
     int printerIndex;
     vector<Task> tasklist;
     int totalNum;
-
+    int finishedNum;
+    int currentToppingNum;
     void sortTable();
+
+    int currentTaskID;
 
 private:
 

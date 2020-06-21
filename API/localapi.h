@@ -1,24 +1,25 @@
 #ifndef LOCALAPI_H
 #define LOCALAPI_H
 #include "api.h"
+#include <QDir>
 
 class localAPI:public API
 {
 public:
     localAPI();
-    localAPI(string dir);
+    localAPI(MainWindow* MW, QString dir);
 
     //collect all of the names of the patterns in the database.
-    void getPatternNameList(vector<string>& patternNames);
+    void getPatternNameList(vector<QString>& patternNames);
 
     //read a pattern named "pattern", fill the information based on the database
-    Pattern readPatternData(string pattern);
+    Pattern readPatternData(QString pattern);
 
     //delete a pattern named "pattern", include all the information saved in the database
-    void deletePatternData(string pattern);
+    void deletePatternData(QString pattern);
 
     //save datas for a pattern. might be a newly added item or item that already exists.
-    void savePatternData(std::string pattern, QString DFAR4Address, QString DBAR4Address,
+    void savePatternData(QString pattern, QString DFAR4Address, QString DBAR4Address,
                                  QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
                                  QString MimageAddress, bool hasBack, bool hasFront);
 
@@ -27,17 +28,26 @@ public:
     // used in datamodel showing. after updating usually.
     void examPatternData(Pattern* pattern);
 
-    bool checkFileOverlap(string Pattern, int file, QString dir);
+    bool checkFileOverlap(QString Pattern, int file, QString dir);
 
-    QString showFileDirinDatabase(string Pattern, int file);
+    QString showFileDirinDatabase(QString Pattern, int file);
 
-    void getOrders(vector<Order>& orderlist);
+    void getERPOrders(vector<Order>& orderlist);
+    void saveOrders(vector<Order>& orderlist);
+    void readOrders(vector<Order>& orderlist);
 
-    void setTasks(Task);
+    void saveTasks(OrderModel* OM);
+    void readSavedTasks(OrderModel* OM);
+
+    void readPrinterData(vector<Printer>& printers);
+
+    int sendPrintingFile(QString pattern, bool isDark, int num, QString printerName, bool front);
+
+    void sendSampleToPrinter(string printerName);
 private:
 
     // dir for local database
-    string dir;
+    QString dir;
 };
 
 #endif // LOCALAPI_H

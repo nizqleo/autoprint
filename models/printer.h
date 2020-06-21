@@ -10,15 +10,17 @@ using namespace std;
 class Printer
 {
 public:
-    Printer(string info);
+    Printer(QString info, int ID);
     Printer();
 
-    void load(string info);
+    void load(QString info);
     string save();
 
     int printerID;
+    QString name;
     bool availble;
     bool darkprint;
+    bool pro;
 };
 
 #endif // PRINTER_H

@@ -12,7 +12,7 @@
 #include "API\api.h"
 #include "API\localapi.h"
 #include "auxiliary.h"
-
+#include <QTextCodec>
 
 
 namespace Ui {

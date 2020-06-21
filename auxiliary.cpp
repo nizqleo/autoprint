@@ -1,29 +1,40 @@
 
 #include "auxiliary.h"
 
-int get_files(string fileFolderPath,std::vector<string>&file)
+int get_files(QString fileFolderPath,std::vector<QString>&file)
 {
-    string fileFolder = fileFolderPath + "\\*";// + fileExtension;
-    string fileName;
-    struct _finddata_t fileInfo;
-
-    long long findResult = _findfirst(fileFolder.c_str(), &fileInfo);
-    if (findResult == -1)
+    QDir qdir(fileFolderPath);
+    if(!qdir.exists())
     {
-        _findclose(findResult);
-        return 0;
+        return false;
     }
 
-    do
-    {
-        fileName = fileFolderPath + "\\" + fileInfo.name;
-        if (fileInfo.attrib == _A_SUBDIR && fileInfo.name[0] != '.')
-        {
-            file.push_back(string(fileInfo.name));
-        }
-    } while (_findnext(findResult, &fileInfo) == 0);
+    //获取filePath下所有文件夹和文件
+    qdir.setFilter(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);//文件夹|文件|不包含./和../
 
-    _findclose(findResult);
+    //排序文件夹优先
+    qdir.setSorting(QDir::DirsFirst);
+
+    //获取文件夹下所有文件(文件夹+文件)
+    QFileInfoList list = qdir.entryInfoList();
+
+
+    if(list.size() == 0)
+    {
+        return false;
+    }
+
+    //遍历
+    for(int i = 0; i < list.size(); i++)
+    {
+        QFileInfo fileInfo = list.at(i);
+
+        if(fileInfo.isDir())//判断是否为文件夹
+        {
+            file.push_back(fileInfo.fileName());
+        }
+    }
+
 }
 
 int SizeMap(string size){
@@ -74,6 +85,15 @@ void SplitString(const string& s, std::vector<string>& v, const string& c)
     v.push_back(s.substr(pos1));
 }
 
+
+void SplitString(const QString& s, std::vector<QString>& v, const QString& c)
+{
+    QStringList templist= s.split(c);
+    for(int i = 0; i < templist.size(); i++){
+        v.push_back(templist[i]);
+    }
+}
+
 bool checkSameFile(QString targetPath, QString referencePath){
     QFileInfo f1(targetPath);
     if(!f1.exists()) return false;
@@ -85,16 +105,15 @@ bool checkSameFile(QString targetPath, QString referencePath){
 }
 
 
-int coverFileCopy(string targetPath, QString originalPath){
-    QString QtargetPath = QString::fromStdString(targetPath);
-    if(checkSameFile(QtargetPath, originalPath)){
+int coverFileCopy(QString targetPath, QString originalPath){
+    if(checkSameFile(targetPath, originalPath)){
         return 1;
     }
-    QFileInfo fi(QtargetPath);
+    QFileInfo fi(targetPath);
     if(fi.exists()){
-        std::remove(QtargetPath.toStdString().data());
+        fi.dir().remove(fi.fileName());
     }
-    if(QFile::copy(originalPath,QtargetPath)){
+    if(QFile::copy(originalPath,targetPath)){
         return 1;
     }
     else{

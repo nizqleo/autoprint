@@ -27,6 +27,7 @@ public:
     explicit printTaskManagement(MainWindow *mainwindow, QWidget *parent = nullptr);
     ~printTaskManagement();
 
+    void saveOrders();
 
 private slots:
     void on_dataPage_button_clicked();
@@ -45,24 +46,26 @@ private slots:
     void on_startPrint_button_clicked();
 
     void on_comboBox_changed(const QString & s);
-    void update(QString s);
+    void update(QString, QString, QString, QString, QString, QString, QString, bool,bool);
 
-    void receiving_asking(int row);
+    void receiving_asking(int row, bool working, int ID);
 
-    void receive_orders(int** numbers, string name, int printerID);
-    void updateTable();
+    void receive_orders(int** numbers, QString name, int printerID);
+    void updateTable(int i);
+
+    void topTaskFinished(int printerID);
+
 signals:
     void datapageopen();
     void settingpageopen();
     void createNewPattern(QString, QString, QString, QString, QString, QString, QString, bool,bool);
-    void sending_new_task(Task*, int);
-
-
+    void sending_new_task(Task*, int, int);
 
 private:
-
     void orderAssignment(int begin, int end, int printerID = 0);
     void updateDatasetWithOrder();
+    void readSaveOrders();
+
 
     Ui::printTaskManagement *ui;
     MainWindow *MW;
@@ -73,7 +76,7 @@ private:
     vector<OrderModel*> ordermodels;
 
     int printerNumber;
-    int currentPrinterIndex;
+    unsigned long long currentPrinterIndex;
     vector<string> timeMap;
     int timeStamp;
 

@@ -26,15 +26,15 @@ public:
     void save();
     void Delete();
 
-
     // parameters
-    string name;
+    QString name;
     bool hasBack;
     bool hasFront;
     bool hasPimages;
     bool hasMimages;
     bool DarkReady;
     bool LightReady;
+
     /* 111111 == 63
      * 1     : has back 32
      *  1    : has front 16
@@ -49,9 +49,6 @@ public:
     QPixmap Mimages;
 
     void computeFileReady();
-
-
-
 
 };
 

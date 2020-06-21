@@ -21,7 +21,7 @@ class Dialog : public QDialog
 public:
     explicit Dialog( dataMaintainance* DM, API* api, QWidget *parent = nullptr);
     ~Dialog();
-    void init(std::string pattern);
+    void init(QString pattern);
 
 private slots:
 

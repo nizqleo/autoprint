@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "auxiliary.h"
+#include <qdebug.h>
 using namespace std;
 
 
@@ -23,34 +24,36 @@ using namespace std;
 enum printType {ZPT, FG, K, LS, CS001, T, W225};
 extern QString printTypeString[7];
 extern QString colorString[9];
-extern string colorErrorString[8];
+extern QString colorErrorString[8];
+extern QString sizeString[5];
 
 class Order
 {
 public:
     Order();
-    Order(vector<string> record);
-    Order(string name, int c, int s, int n);
-    static int color2Index(string c);
-    static int size2Index(string s);
-    static printType type2index(string c);
+    Order(vector<QString> record);
+    Order(QString name, int c, int s, int n);
+    static int color2Index(QString c);
+    static int size2Index(QString s);
+    static printType type2index(QString c);
 
-    void addOtherInfo(string info);
+    void addOtherInfo(QString info);
 
     //static const QString colorErrorString[8];
 
 //private:
     string SKU;
 
-    string pattern;
+    QString pattern;
     int color;
     bool isDark;
     int size;
+    bool finished;
     printType type;
 
     int number;
 
-    string otherInfos;
+    QString otherInfos;
     bool fromERP;
 
     int TimeStamp;

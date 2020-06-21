@@ -56,15 +56,8 @@ signals:
 private:
     Ui::dataMaintainance *ui;
     MainWindow *MW;
-    QStandardItemModel* model;
 
     Dialog* dialog;
-
-
-    printTaskManagement* PTM;
-    printerSetting* PS;
-
-
 };
 
 

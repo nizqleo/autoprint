@@ -15,7 +15,6 @@ void Pattern::sendAR4File(){
 
 
 
-
 void Pattern::computeFileReady(){
     DarkReady = LightReady = false;
 
@@ -35,5 +34,4 @@ void Pattern::computeFileReady(){
     else DarkReady =false;
 
 }
-
 

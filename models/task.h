@@ -24,46 +24,52 @@ using namespace std;
  */
 class datasetModel;
 
-enum TaskStatus {FINISHED, PRINTING, PENDING};
+enum TaskStatus {FINISHED, PRINTING, PENDING, SUSPENDED};
 
 class Task
 {
 public:
     Task();
-    Task(const Order o);
+    Task( Order* o);
+    Task( vector<QString>& temp);
     ~Task();
     // Assigned
     int printerIdx;
+    int taskID;
     static datasetModel* DModel;
 
     Task operator +(Task t);
     Task operator +(Order t);
 
     bool operator<(const Task & right)const;   //重载<运算符
-
+    void finishOrders();
     friend class TaskModel;
     friend class OrderModel;
     friend class startWorking;
     friend class printTaskManagement;
-
-    void Add(Order o);
+    friend class localAPI;
+    void Add(Order* o);
 
     void update();
+    QString sizeNumberString();
+    void sizeNumberStringAnalysis(QString s);
 private:
     Pattern* pattern; // might be NULL!
-    string name;
+    QString name;
     int numbers[9][6];
     int totalNum;
 
+    vector<Order*> orders;
     // information
     TaskStatus Tstatus;
     bool fileReady;
     printType type;
     QString createTime;
+    QString modifiedTime;
     bool fromERP;
     int colorInfo;
     bool isDark;
-    bool topped;
+    int topped;
 
     void init();
 };

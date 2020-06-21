@@ -54,7 +54,7 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
     if(index.column() == 1){
         if(patterns[patternIndex].hasMimages){
             if(role == Qt::DecorationRole)
-                return patterns[patternIndex].Mimages.scaled(QSize(280,280));
+                return patterns[patternIndex].Mimages.scaled(QSize(150,150),Qt::KeepAspectRatio,Qt::SmoothTransformation);
         }
         else {
             if(role == Qt::DisplayRole)
@@ -64,7 +64,7 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
     if(index.column() == 2){
         if(patterns[patternIndex].hasPimages){
             if(role == Qt::DecorationRole)
-                return patterns[patternIndex].Pimages.scaled(QSize(280,280));
+                return patterns[patternIndex].Pimages.scaled(QSize(150,150), Qt::KeepAspectRatioByExpanding,Qt::SmoothTransformation);
         }
         else {
             if(role == Qt::DisplayRole)
@@ -74,7 +74,7 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
 
     if (role == Qt::DisplayRole) {
         if(index.column() == 0){//pattern name
-            return QString::fromStdString(patternNames[patternIndex]);
+            return patternNames[patternIndex];
         }
 
         int status = patterns[patternIndex].status;
@@ -98,7 +98,7 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
             if((status & 1) == 1)
                 value += "深色后片文件\n";
 
-            if(value == "")
+            if(value == QString(""))
                 value = "无";
             else value.chop(1);
 
@@ -137,8 +137,8 @@ QVariant datasetModel::headerData(int section,
 
 void datasetModel::deleteItem(int index){
     beginResetModel();
-    int realIndex = foundIndexMap(index);
-    std::string pattern = patternNames[realIndex];
+    unsigned long long realIndex = foundIndexMap(index);
+    QString pattern = patternNames[realIndex];
 
     patternNames.erase(patternNames.begin()+realIndex);
     patterns.erase(patterns.begin()+realIndex);
@@ -151,13 +151,13 @@ void datasetModel::deleteItem(int index){
 }
 
 
-std::string datasetModel::getItem(int index){
+QString datasetModel::getItem(int index){
 
     return patternNames[foundIndexMap(index)];
 }
 
 
-void datasetModel::save_files(std::string pattern, QString DFAR4Address, QString DBAR4Address,
+void datasetModel::save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
                               QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
                               QString MimageAddress, bool hasBack, bool hasFront){
     std::cout<<"saving"<<std::endl;
@@ -175,7 +175,8 @@ void datasetModel::save_files(std::string pattern, QString DFAR4Address, QString
     patterns[patternIndex].hasFront = hasFront;
 
     api->savePatternData(pattern, DFAR4Address, DBAR4Address,
-                        LFAR4Address, LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
+                        LFAR4Address, LBAR4Address, PimageAddress,
+                         MimageAddress, hasBack, hasFront);
     api->examPatternData(&patterns[patternIndex]);
 
     endResetModel();
@@ -183,18 +184,18 @@ void datasetModel::save_files(std::string pattern, QString DFAR4Address, QString
 
 
 int datasetModel::getIndex(QString pattern){
-    return std::find(patternNames.begin(), patternNames.end(), pattern.toStdString()) - patternNames.begin();
+    return std::find(patternNames.begin(), patternNames.end(), pattern) - patternNames.begin();
 }
 
 
 bool datasetModel::patternNameOverlapCheck(QString s){
-    string s1 = s.toStdString();
-    return (find(patternNames.begin(), patternNames.end(), s1) != patternNames.end());//1: overlapped!
+
+    return (find(patternNames.begin(), patternNames.end(), s) != patternNames.end());//1: overlapped!
 }
 
 
-Pattern* datasetModel::patternPointer(string name){
-    vector<string>::iterator p = find(patternNames.begin(), patternNames.end(), name);
+Pattern* datasetModel::patternPointer(QString name){
+    vector<QString>::iterator p = find(patternNames.begin(), patternNames.end(), name);
     if(p != patternNames.end()){
         return &patterns[p-patternNames.begin()];
     }
@@ -202,16 +203,16 @@ Pattern* datasetModel::patternPointer(string name){
 }
 
 
-void datasetModel::searching(string s){
+void datasetModel::searching(QString s){
     beginResetModel();
-    if(s == ""){
+    if(s == QString("")){
         searchingMode = false;
         endResetModel();
         return;
     }
     indexMap.clear();
     for(int i = 0; i < patternNames.size(); i++){
-        if(patternNames[i].find(s) != string::npos){
+        if(patternNames[i].contains(s,Qt::CaseInsensitive)){
             indexMap.push_back(i);
         }
     }
@@ -242,7 +243,7 @@ int datasetModel::getPatternSize(){
 }
 
 
-bool datasetModel::hasPatternName(string name){
+bool datasetModel::hasPatternName(QString name){
     return find(patternNames.begin(), patternNames.end(), name) != patternNames.end();
 }
 

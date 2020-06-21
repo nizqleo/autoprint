@@ -30,6 +30,7 @@ SOURCES += \
         auxiliary.cpp \
         main.cpp \
         mainwindow.cpp \
+        models/color.cpp \
         models/colortask.cpp \
         models/colortaskmodel.cpp \
         models/datasetmodel.cpp \
@@ -53,6 +54,7 @@ HEADERS += \
         API/localapi.h \
         auxiliary.h \
         mainwindow.h \
+        models/color.h \
         models/colortask.h \
         models/colortaskmodel.h \
         models/datasetmodel.h \

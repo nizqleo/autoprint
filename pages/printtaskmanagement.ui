@@ -196,7 +196,7 @@
               </font>
              </property>
              <property name="text">
-              <string>总件数：</string>
+              <string>任务进度：</string>
              </property>
             </widget>
            </item>
@@ -204,7 +204,7 @@
             <widget class="QLabel" name="num_label">
              <property name="minimumSize">
               <size>
-               <width>50</width>
+               <width>30</width>
                <height>0</height>
               </size>
              </property>

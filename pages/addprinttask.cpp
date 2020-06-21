@@ -13,7 +13,7 @@ addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
     QStringList word_list;
 
     for(int i = 0; i < MW->DM->DModel->patternNames.size(); i++){
-        word_list<<QString::fromStdString(MW->DM->DModel->patternNames[i]);
+        word_list<<MW->DM->DModel->patternNames[i];
     }
 
     QCompleter *completer = new QCompleter(word_list, this);
@@ -45,7 +45,7 @@ addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
     ui->comboBox->addItem("自动分配");
     printerNumber = MW->printers.size();
     for (int i = 0; i < printerNumber;i++) {
-        ui->comboBox->addItem(QString::fromStdString(to_string(MW->printers[i].printerID)+"号打印机"));
+        ui->comboBox->addItem(MW->printers[i].name);
     }
     last_r = last_c = 0;
 }
@@ -53,8 +53,8 @@ addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
 
 void addPrintTask::on_pattern_lineEdit_textChanged(QString s){
     //cout<<"edited"<<endl;
-    if(MW->DM->DModel->hasPatternName(s.toStdString())){
-        pattern = MW->DM->DModel->patternPointer(s.toStdString());
+    if(MW->DM->DModel->hasPatternName(s)){
+        pattern = MW->DM->DModel->patternPointer(s);
         QString file = "";
         if(pattern->DarkReady)  file+="深色文件\n";
         if(pattern->LightReady)  file+="浅色文件\n";
@@ -105,7 +105,7 @@ void addPrintTask::on_comfirm_button_clicked(){
             numbers[i][j] = model->data(index).toInt();
         }
     }
-    emit send_orders(numbers, ui->pattern_lineEdit->text().toStdString(), ui->comboBox->currentIndex());
+    emit send_orders(numbers, ui->pattern_lineEdit->text(), ui->comboBox->currentIndex());
     this->close();
 }
 

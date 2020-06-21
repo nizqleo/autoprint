@@ -15,7 +15,7 @@ printTaskManagement::printTaskManagement(MainWindow *mainwindow, QWidget *parent
     connect(ui->comboBox, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(on_comboBox_changed(const QString &)));
     connect(this, SIGNAL(createNewPattern(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
             MW->DM, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
-    //QPixmap pixmap("C:\\Users\\nzq82\\source\\QtRepos\\data\\logo.png");
+
     QPixmap pixmap(".\\data\\logo.png");
     ui->logoLabel->setPixmap(pixmap);
     ui->logoLabel->show();
@@ -24,10 +24,10 @@ printTaskManagement::printTaskManagement(MainWindow *mainwindow, QWidget *parent
     ordermodels.resize(printerNumber);
 
     for (int i = 0; i < printerNumber;i++) {
-        ui->comboBox->addItem(QString::fromStdString(to_string(MW->printers[i].printerID)+"号打印机"));
+        ui->comboBox->addItem(MW->printers[i].name);
         ordermodels[i] = new OrderModel(i);
+        api->readSavedTasks(ordermodels[i]);
     }
-
 
     ui->tableView->setModel(ordermodels[0]);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -36,13 +36,17 @@ printTaskManagement::printTaskManagement(MainWindow *mainwindow, QWidget *parent
     ui->tableView->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
     ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
+    ordermodels[0]->numberCheck();
+
+    ui->num_label->setText(QString::number(ordermodels[0]->finishedNum) +" / " + QString::number(ordermodels[0]->totalNum));
+
     ui->comboBox->setCurrentIndex(0);
     currentPrinterIndex= 0;
     ui->edit_button->setEnabled(false);
     ui->detail_button->setEnabled(false);
     ui->up_button->setEnabled(false);
     cout<<Task::DModel->getPatternSize()<<endl;
-    on_ERP_button_clicked();
+
     ordermodels[0]->update();
 }
 
@@ -65,9 +69,31 @@ void printTaskManagement::orderAssignment(int begin, int end, int printerID){
     assignment.resize( end - begin, 0);
     if(printerID == 0){
         // compute Assignment
-        //
-        //
-        //
+        vector<int> LightPrinter;
+        vector<int> DarkPrinter;
+        for (int i = 0; i < printerNumber;i++) {
+            if(MW->printers[i].availble && MW->printers[i].darkprint)
+                DarkPrinter.push_back(i);
+            if(MW->printers[i].availble && !MW->printers[i].darkprint)
+                LightPrinter.push_back(i);
+        }
+
+
+        int ls = LightPrinter.size();
+        int ds = DarkPrinter.size();
+        int lp, dp; lp = dp = 0;
+        for (int i = 0; i < end-begin; i++) {
+            if(orderList[i+begin].isDark){
+                assignment[i] = DarkPrinter[dp];
+                dp++;
+                if(dp == ds) dp = 0;
+            }
+            else{
+                assignment[i] = LightPrinter[lp];
+                lp++;
+                if(lp == ls) lp = 0;
+            }
+        }
         // //////////////////
     }
     else{
@@ -76,7 +102,7 @@ void printTaskManagement::orderAssignment(int begin, int end, int printerID){
     }
 
     for(int i  = begin; i < end; i++){
-        ordermodels[assignment[i-begin]]->addOrder(orderList[i]);
+        ordermodels[assignment[i-begin]]->addOrder(&orderList[i]);
     }
 
     for(int i  = 0; i < ordermodels.size(); i++){
@@ -98,14 +124,14 @@ void printTaskManagement::updateDatasetWithOrder(){
         QMessageBox::StandardButton reply = QMessageBox::information(NULL, "新款号", QString::fromStdString("本次订单中包含"+to_string(cnt) +"个新款号，已在数据库中建立条目，请及时完善相关文件。"), QMessageBox::Yes );
 }
 
-
 // swifting pattern picture distribution
 void printTaskManagement::on_comboBox_changed(const QString & s){
     currentPrinterIndex = ui->comboBox->currentIndex();
     ui->tableView->setModel(
                 ordermodels[currentPrinterIndex]);
     if(ordermodels[currentPrinterIndex])
-        ui->num_label->setNum(ordermodels[currentPrinterIndex]->totalNum);
+        ui->num_label->setText(QString::number(ordermodels[currentPrinterIndex]->finishedNum) +" / "
+                               + QString::number(ordermodels[currentPrinterIndex]->totalNum));
 }
 
 void printTaskManagement::on_dataPage_button_clicked(){
@@ -121,11 +147,20 @@ void printTaskManagement::on_settingPage_button_clicked(){
 void printTaskManagement::on_ERP_button_clicked(){
     // read order file
     // renew tableview
-    api->getOrders(orderList);
-    updateDatasetWithOrder();
-    orderAssignment(0, orderList.size());
-    ui->num_label->setNum(ordermodels[currentPrinterIndex]->totalNum);
+    int begin = orderList.size();
+    api->getERPOrders(orderList);
+    //api->saveOrders(orderList);
 
+    updateDatasetWithOrder();
+    orderAssignment(begin, orderList.size());
+    ui->num_label->setText(QString::number(ordermodels[currentPrinterIndex]->finishedNum) +" / "
+                           + QString::number(ordermodels[currentPrinterIndex]->totalNum));
+
+    updateTable(currentPrinterIndex);
+
+    for(int i = 0 ; i < ordermodels.size(); i++){
+        api->saveTasks(ordermodels[i]);
+    }
 }
 
 void printTaskManagement::on_tableView_clicked(){
@@ -138,26 +173,45 @@ void printTaskManagement::on_tableView_clicked(){
 void printTaskManagement::on_add_button_clicked(){
     addPrintTask * APT = new addPrintTask(MW);
     APT->show();
-    connect(APT, SIGNAL(send_orders(int**, string, int)), this, SLOT(receive_orders(int**, string, int)));
+    connect(APT, SIGNAL(send_orders(int**, QString, int)), this, SLOT(receive_orders(int**, QString, int)));
 }
 
 void printTaskManagement::on_up_button_clicked(){
+    if(!ui->tableView->currentIndex().isValid())
+        return;
     int row = ui->tableView->currentIndex().row();
-//    ordermodels[ui->comboBox->currentIndex()]->move(row, -1);
-    ordermodels[currentPrinterIndex]->tasklist[row].topped =
-            1-ordermodels[currentPrinterIndex]->tasklist[row].topped;
-    updateTable();
+    if(ordermodels[currentPrinterIndex]->tasklist[row].Tstatus == PRINTING ||
+            ordermodels[currentPrinterIndex]->tasklist[row].Tstatus == FINISHED){
+        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "置顶失败", "只能置顶尚未打印的任务！", QMessageBox::Yes);
+        return;
+    }
+    if(ordermodels[currentPrinterIndex]->tasklist[row].topped > 0)
+        ordermodels[currentPrinterIndex]->tasklist[row].topped = 0;
+    else{
+        ordermodels[currentPrinterIndex]->currentToppingNum ++;
+        ordermodels[currentPrinterIndex]->tasklist[row].topped =
+                ordermodels[currentPrinterIndex]->currentToppingNum;
+    }
+
+    updateTable(currentPrinterIndex);
+
+    api->saveTasks(ordermodels[currentPrinterIndex]);
 }
 
 void printTaskManagement::on_detail_button_clicked(){
+    if(!ui->tableView->currentIndex().isValid())
+        return;
     int row = ui->tableView->currentIndex().row();
-    startWorking * SW = new startWorking(&ordermodels[currentPrinterIndex]->tasklist[row], SHOWING, row);
+    startWorking * SW = new startWorking(&ordermodels[currentPrinterIndex]->tasklist[row],
+                                         SHOWING, row, MW->printers[currentPrinterIndex].name);
     SW->show();
-    connect(SW, SIGNAL(asking_for_adjacent(int)), this, SLOT(receiving_asking(int)));
-    connect(this, SIGNAL(sending_new_task(Task*, int)), SW, SLOT(receiving_new_task(Task*, int)));
+    connect(SW, SIGNAL(asking_for_adjacent(int, bool ,int)), this, SLOT(receiving_asking(int, bool , int)));
+    connect(this, SIGNAL(sending_new_task(Task*, int, int)), SW, SLOT(receiving_new_task(Task*, int, int)));
 }
 
 void printTaskManagement::on_edit_button_clicked(){
+    if(!ui->tableView->currentIndex().isValid())
+        return;
     int row = ui->tableView->currentIndex().row();
     Dialog * dialog = new Dialog(MW->DM, MW->api);
     Task& tempTask = ordermodels[currentPrinterIndex]->tasklist[row];
@@ -167,20 +221,20 @@ void printTaskManagement::on_edit_button_clicked(){
             MW->DM, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
     connect(dialog, SIGNAL(PatternNameChanged(QString)), MW->DM, SLOT(delete_files(QString)));
     connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
-            this, SLOT(update(QString)));
+            this, SLOT(update(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
 
     dialog->show();
-
 }
 
-void printTaskManagement::update(QString s){
-    int row = ui->tableView->currentIndex().row();
-    ordermodels[currentPrinterIndex]->update(row);
+void printTaskManagement::update(QString s, QString, QString, QString, QString, QString, QString, bool,bool){
+    ordermodels[currentPrinterIndex]->update(s);
     ordermodels[currentPrinterIndex]->sortTable();
+    ui->edit_button->setEnabled(false);
+    ui->detail_button->setEnabled(false);
+    ui->up_button->setEnabled(false);
 }
 
-
-void printTaskManagement::receive_orders(int** numbers, string name, int printerID){
+void printTaskManagement::receive_orders(int** numbers, QString name, int printerID){
 
     int begin = orderList.size();
     for(int i = 0; i < 8; i++){
@@ -196,35 +250,88 @@ void printTaskManagement::receive_orders(int** numbers, string name, int printer
 
     orderAssignment(begin, end, printerID);
 
-    updateTable();
+    for(int i = 0 ; i < ordermodels.size(); i++){
+        updateTable(i);
+        api->saveTasks(ordermodels[i]);
+    }
 }
 
-void printTaskManagement::receiving_asking(int row){
-    if(row < 0 || row >= ordermodels[currentPrinterIndex]->tasklist.size()){
-        emit sending_new_task(NULL, row);
+/* Tasks are finished here.
+ *
+ */
+void printTaskManagement::receiving_asking(int row, bool working, int ID){
+
+    if(!working){
+        if(row < 0 || row >= ordermodels[ID]->tasklist.size()){
+            emit sending_new_task(NULL, row, ID);
+        }
+        else{
+            emit sending_new_task(&ordermodels[ID]->tasklist[row], row, ID);
+        }
     }
     else{
-        emit sending_new_task(&ordermodels[currentPrinterIndex]->tasklist[row], row);
+        if(row == -1){
+            ordermodels[ID]->tasklist[0].Tstatus = SUSPENDED;
+            updateTable(ID);
+            api->saveTasks(ordermodels[ID]);
+            emit sending_new_task(NULL, 0, ID);
+            return;
+        }
+
+        topTaskFinished(ID);
+
+        if(ordermodels[ID]->tasklist.size() == 1 || ordermodels[ID]->tasklist[1].Tstatus == FINISHED){
+            QMessageBox::StandardButton reply = QMessageBox::information(NULL, "打印完成", "本打印机的打印任务已全部完成！", QMessageBox::Yes);
+            emit sending_new_task(NULL, 0, ID);
+            return;
+        }
+
+        ordermodels[ID]->tasklist[1].Tstatus = PRINTING;
+        updateTable(ID);
+        emit sending_new_task(&ordermodels[ID]->tasklist[0], 0, ID);
     }
-    updateTable();
+
+}
+
+void printTaskManagement::topTaskFinished(int printerID){
+    ordermodels[printerID]->tasklist[0].Tstatus = FINISHED;
+    ordermodels[printerID]->tasklist[0].topped = 0;
+    api->saveTasks(ordermodels[printerID]);
+    ordermodels[printerID]->tasklist[0].finishOrders();
+
+    //api->saveOrders(orderList);
 }
 
 void printTaskManagement::on_startPrint_button_clicked(){
     int row = 0;
-    startWorking * SW = new startWorking(&ordermodels[currentPrinterIndex]->tasklist[row], WORKING, row);
+    if(ordermodels[currentPrinterIndex]->tasklist.empty())
+        return;
+    startWorking * SW = new startWorking(&ordermodels[currentPrinterIndex]->tasklist[row], WORKING, row, MW->printers[currentPrinterIndex].name);
     SW->show();
-    connect(SW, SIGNAL(asking_for_adjacent(int)), this, SLOT(receiving_asking(int)));
-    connect(this, SIGNAL(sending_new_task(Task*, int)), SW, SLOT(receiving_new_task(Task*, int)));
 
-    updateTable();
+    connect(SW, SIGNAL(asking_for_adjacent(int, bool ,int)), this, SLOT(receiving_asking(int, bool , int)));
+    connect(this, SIGNAL(sending_new_task(Task*, int, int)), SW, SLOT(receiving_new_task(Task*, int, int)));
+    connect(SW, SIGNAL(update(int)), this, SLOT(updateTable(int)));
+
+    ordermodels[currentPrinterIndex]->tasklist[row].Tstatus = PRINTING;
+    updateTable(currentPrinterIndex);
 }
 
+void printTaskManagement::updateTable(int i){
+    ordermodels[i]->update();
+}
 
-void printTaskManagement::updateTable(){
-    ordermodels[currentPrinterIndex]->update();
-//    ordermodels[currentPrinterIndex]->sortTable();
-//    ui->tableView->setModel(ordermodels[currentPrinterIndex]);
-//    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-//    ui->tableView->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-//    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+/* read orders from the orders.csv, which is the files that is being processed.
+ *
+ *
+ */
+void printTaskManagement::readSaveOrders(){
+    // read order file
+    // renew tableview
+    api->readOrders(orderList);
+    updateDatasetWithOrder();
+    orderAssignment(0, orderList.size());
+    ui->num_label->setText(QString::number(ordermodels[0]->finishedNum) +" / " + QString::number(ordermodels[0]->totalNum));
+
+
 }

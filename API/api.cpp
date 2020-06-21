@@ -1,4 +1,5 @@
 #include "api.h"
+#include "mainwindow.h"
 
 API::API()
 {
@@ -6,16 +7,21 @@ API::API()
 }
 
 
-const string API::LFPrefix = "qian-qian-";
-const string API::LBPrefix = "qian-hou-";
-const string API::DFPrefix = "shen-qian-";
-const string API::DBPrefix = "shen-hou-";
 
-//const wstring API::wLFPrefix = "浅-前-";
-//const wstring API::wLBPrefix = "浅-后-";
-//const wstring API::wDFPrefix = "深-前-";
-//const wstring API::wDBPrefix = "深-后-";
+API::API(MainWindow* MW):MW(MW)
+{
+
+}
 
 
-const string API::PimName = "ban_dan";
-const string API::MimName = "xiao_guo_tu";
+
+
+const  QString API::LFPrefix = "浅-前-";
+const  QString API::LBPrefix = "浅-后-";
+const  QString API::DFPrefix = "深-前-";
+const  QString API::DBPrefix = "深-后-";
+
+const  QString API::PimName = "生产版单";
+const  QString API::MimName = "效果图";
+
+

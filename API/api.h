@@ -4,10 +4,18 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <QProcess>
+#include <QDebug>
+#include <QImageReader>
+
 
 #include <models/pattern.h>
 #include <models/task.h>
 #include <models/order.h>
+#include <models/printer.h>
+#include <models/ordermodel.h>
+
+class MainWindow;
 
 #include "auxiliary.h"
 using namespace std;
@@ -15,18 +23,19 @@ class API
 {
 public:
     API();
+    API(MainWindow* MW);
 
     //collect all of the names of the patterns in the database.
-    virtual void getPatternNameList(vector<string>& patternNames) = 0;
+    virtual void getPatternNameList(vector<QString>& patternNames) = 0;
 
     //read a pattern named "pattern", fill the information based on the database
-    virtual Pattern readPatternData(string pattern) = 0;
+    virtual Pattern readPatternData(QString pattern) = 0;
 
     //delete a pattern named "pattern", include all the information saved in the database
-    virtual void deletePatternData(string pattern) = 0;
+    virtual void deletePatternData(QString pattern) = 0;
 
     //save datas for a pattern. might be a newly added item or item that already exists.
-    virtual void savePatternData(std::string pattern, QString DFAR4Address, QString DBAR4Address,
+    virtual void savePatternData(QString pattern, QString DFAR4Address, QString DBAR4Address,
                                  QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
                                  QString MimageAddress, bool hasBack, bool hasFront) = 0;
 
@@ -35,28 +44,34 @@ public:
     // used in datamodel showing. after updating usually.
     virtual void examPatternData(Pattern* pattern) = 0;
 
-    //
-    virtual bool checkFileOverlap(string Pattern, int file, QString dir) = 0;
+    virtual bool checkFileOverlap(QString Pattern, int file, QString dir) = 0;
 
-    virtual QString showFileDirinDatabase(string Pattern, int file) = 0;
+    virtual QString showFileDirinDatabase(QString Pattern, int file) = 0;
 
-    virtual void getOrders(vector<Order>& orderlist) = 0;
+    virtual void getERPOrders(vector<Order>& orderlist) = 0;
+    virtual void saveOrders(vector<Order>& orderlist) = 0;
 
-    virtual void setTasks(Task) = 0;
+    virtual void saveTasks(OrderModel* OM) = 0;
 
+    virtual void readOrders(vector<Order>& orderlist) = 0;
+    virtual void readSavedTasks(OrderModel* OM) = 0;
 
-    const static string LFPrefix;
-    const static string LBPrefix;
-    const static string DFPrefix;
-    const static string DBPrefix;
+    virtual void readPrinterData(vector<Printer>& printers) = 0;
 
-//    const static wstring wLFPrefix;
-//    const static wstring wLBPrefix;
-//    const static wstring wDFPrefix;
-//    const static wstring wDBPrefix;
+    virtual int sendPrintingFile(QString pattern, bool isDark, int num, QString printerName, bool front) = 0;
 
-    const static string PimName;
-    const static string MimName;
+    const static QString LFPrefix;
+    const static QString LBPrefix;
+    const static QString DFPrefix;
+    const static QString DBPrefix;
+
+    const static QString PimName;
+    const static QString MimName;
+
+    MainWindow* MW;
+
+private:
+
 
 };
 

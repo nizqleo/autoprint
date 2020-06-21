@@ -9,15 +9,18 @@ startWorking::startWorking(QWidget *parent) :
     ui->setupUi(this);
 }
 
-
-
-startWorking::startWorking(Task* t, modes m, int i, QWidget *parent) :
+startWorking::startWorking(Task* t, modes m, int i, QString name,  QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::startWorking), task(t),index(i),mode(m)
+    ui(new Ui::startWorking), task(t),index(i),mode(m), printerName(name)
 {
+    setAttribute( Qt::WA_DeleteOnClose, true );
     ui->setupUi(this);
 
     printerIndex = task->printerIdx;
+
+    if(mode == WORKING)
+        ui->lastPattern_button->setEnabled(false);
+
     init();
 
 }
@@ -34,7 +37,17 @@ void startWorking::on_Return_button_clicked(){
 }
 
 void startWorking::on_lastPattern_button_clicked(){
-    emit asking_for_adjacent(index-1);
+    if(mode == WORKING){
+        QMessageBox::StandardButton reply = QMessageBox::question(NULL, "暂停", "是否暂停任务？", QMessageBox::Yes | QMessageBox::No );
+        if(reply == QMessageBox::No)
+            return ;
+        else{
+            emit asking_for_adjacent(-1, true, printerIndex);
+        }
+    }
+    else{
+        emit asking_for_adjacent(index-1, false, printerIndex);
+    }
 }
 
 void startWorking::on_nextPattern_button_clicked(){
@@ -43,21 +56,46 @@ void startWorking::on_nextPattern_button_clicked(){
         if(reply == QMessageBox::No)
             return ;
         else{
-            cout<<"working next pattern"<<endl;
-            task->Tstatus = FINISHED;
-            emit asking_for_adjacent(index+1);
+            emit asking_for_adjacent(index+1, true, printerIndex);
         }
     }
     else{
-        cout<<"showing next pattern"<<endl;
-        emit asking_for_adjacent(index+1);
+        emit asking_for_adjacent(index+1, false, printerIndex);
     }
 }
 
-void startWorking::receiving_new_task(Task* t, int i){
-    if(t == NULL){
-        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "无任务", "无更多任务！", QMessageBox::Yes );
+void startWorking::on_frontPage_button_clicked(){
+    int code = api->sendPrintingFile(task->name, task->isDark, task->totalNum, printerName, 1);
+    if(code != 1){
+        if(code == 3)
+            QMessageBox::StandardButton reply = QMessageBox::information(NULL, "上传失败", "文件拷贝错误", QMessageBox::Yes);
+        else
+            QMessageBox::StandardButton reply = QMessageBox::information(NULL, "上传失败", "错误代码： "+QString::number(code), QMessageBox::Yes);
+    }
+    //ui->frontPage_button->setText("再次上传前片文件");
+}
+void startWorking::on_backPage_button_clicked(){
+    int code = api->sendPrintingFile(task->name, task->isDark, task->totalNum, printerName, 0);
+    if(code != 1){
+        if(code == 3)
+            QMessageBox::StandardButton reply = QMessageBox::information(NULL, "上传失败", "文件拷贝错误", QMessageBox::Yes);
+        else
+            QMessageBox::StandardButton reply = QMessageBox::information(NULL, "上传失败", "错误代码： "+QString::number(code), QMessageBox::Yes);
+    }
+
+    //ui->backPage_button->setText("再次上传后片文件");
+}
+
+
+void startWorking::receiving_new_task(Task* t, int i, int ID){
+    if(ID != printerIndex) return;
+    if(t == NULL && mode == SHOWING){
+        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "无更多任务", "已到任务列表底端！", QMessageBox::Yes );
         return ;
+    }
+    if(t == NULL && mode == WORKING){
+        this->close();
+        return;
     }
     index = i;
     task = t;
@@ -66,43 +104,57 @@ void startWorking::receiving_new_task(Task* t, int i){
 
 // init operations based on task specifing.
 void startWorking::init(){
-    //cout<<"init called"<<endl;
     TM = new TaskModel(*task);
 
     ui->tableView->setModel(TM);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch );
     ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch );
 
-    ui->printerIDLabel->setNum(printerIndex);
-    ui->patternIDLabel->setText(QString::fromStdString(task->name));
+    ui->printerIDLabel->setText(printerName);
+    ui->patternIDLabel->setText(task->name);
+    ui->type_label->setText(printTypeString[task->type]);
 
+    QSize picSize(473, 300);
     if(task->pattern->hasMimages){
-        ui->M_label->setPixmap(task->pattern->Mimages.scaled(QSize(200, 200)));
+        ui->M_label->setPixmap(task->pattern->Mimages.scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation));
         ui->M_label->show();
+    }else{
+        ui->M_label->setText("效果图/模特图");
     }
     if(task->pattern->hasPimages){
-        ui->P_label->setPixmap(task->pattern->Pimages.scaled(QSize(200, 200)));
+        ui->P_label->setPixmap(task->pattern->Pimages.scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation));
         ui->P_label->show();
+
+    }
+    else{
+            ui->P_label->setText("生产版单");
     }
 
     if(mode == WORKING){
-        // send files!!!!
-        cout<<"sending files"<<endl;
+        ui->lastPattern_button->setText("暂停");
+        ui->lastPattern_button->setEnabled(true);
+        ui->nextPattern_button->setText("打印完毕");
 
-        ui->file_label->setText("上传中");
-        QPalette red;
-        red.setColor(QPalette::WindowText,Qt::red);
-        ui->file_label->setPalette(red);
-        // when finished loading
 
-        ui->file_label->setText("上传完毕");
-        QPalette green;
-        green.setColor(QPalette::WindowText,Qt::darkGreen);
-        ui->file_label->setPalette(green);
-
-        task->Tstatus = PRINTING;
+        if(task->pattern->hasBack){
+            ui->backPage_button->setEnabled(true);
+            ui->backPage_button->setText("上传后片文件");
+        }else{
+            ui->backPage_button->setEnabled(false);
+            ui->backPage_button->setText("本款无后片");
+        }
+        if(task->pattern->hasFront){
+            ui->frontPage_button->setEnabled(true);
+            ui->frontPage_button->setText("上传前片文件");
+        }else{
+            ui->frontPage_button->setEnabled(false);
+            ui->frontPage_button->setText("本款无前片");
+        }
+        ui->file_label->setText("文件齐全");
 
     }else{
+        ui->backPage_button->setEnabled(true);
+        ui->backPage_button->setText("上传后片文件");
         if(task->fileReady){
             ui->file_label->setText("文件齐全");
             QPalette green;
@@ -116,4 +168,9 @@ void startWorking::init(){
             ui->file_label->setPalette(red);
         }
     }
+
+    emit update(printerIndex);
 }
+
+
+API* startWorking::api = NULL;

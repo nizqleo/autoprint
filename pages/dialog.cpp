@@ -38,13 +38,13 @@ Dialog::~Dialog()
     delete ui;
 }
 
-void Dialog::init(std::string name){// happens only in editing
+void Dialog::init(QString name){// happens only in editing
     setWindowTitle(tr("修改条目"));
     isEdit=true;
     pattern = api->readPatternData(name);
 
-    ui->Pattern_lineEdit->setText(QString::fromStdString(name));
-    originalPatternName = QString::fromStdString(name);
+    ui->Pattern_lineEdit->setText(name);
+    originalPatternName = name;
 
     if (pattern.status < 48) {//
         if((pattern.status>>5) & 1 == 1){ //10 只有后
@@ -187,22 +187,26 @@ void Dialog::update(){
     ui->Mimage_lineEdit->setText(MimageAddress);
     ui->Pimage_lineEdit->setText(PimageAddress);
 
-    QSize picSize(280, 280);
-    QFileInfo fileInfo(MimageAddress);
-    if(fileInfo.isFile()){
-        QPixmap pixmapM(MimageAddress);
-        pixmapM = pixmapM.scaled(picSize);
+    QSize picSize(450, 280);
+    //image
+    QImageReader Qimagereader(MimageAddress);
+    Qimagereader.setDecideFormatFromContent(true);
+
+    if(Qimagereader.canRead()){
+        QPixmap pixmapM = QPixmap::fromImageReader(&Qimagereader).
+                scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation);
         ui->Mimage_label->setPixmap(pixmapM);
         ui->Mimage_label->show();
     }
 
-    fileInfo.setFile(PimageAddress);
-    if(fileInfo.isFile()){
-        QPixmap pixmapP(PimageAddress);
-        pixmapP = pixmapP.scaled(picSize);
+    Qimagereader.setFileName(PimageAddress);
+    if(Qimagereader.canRead()){
+        QPixmap pixmapP = QPixmap::fromImageReader(&Qimagereader).
+                scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation);
         ui->Pimage_label->setPixmap(pixmapP);
         ui->Pimage_label->show();
     }
+
 }
 
 void Dialog::on_ConfirmButton_clicked(){
@@ -311,9 +315,10 @@ int Dialog::fileReadyCheck(){
         if(!fileInfo.isFile())  { errorList += "\t浅色后片文件\n"; fileErrorNum++;}
     }
 
-    fileInfo.setFile(PimageAddress);
-    if(!fileInfo.isFile())  errorList += "\t生产版单文件\n";
-    fileInfo.setFile(MimageAddress);
+    QImageReader Qimagereader(PimageAddress);
+    Qimagereader.setDecideFormatFromContent(true);
+    if(!Qimagereader.canRead())  errorList += "\t生产版单文件\n";
+    Qimagereader.setFileName(MimageAddress);
     if(!fileInfo.isFile())  errorList += "\t效果图/模特图文件\n";
 
     if(errorList != ""){
@@ -325,7 +330,7 @@ int Dialog::fileReadyCheck(){
         if (reply == QMessageBox::No)
             return 0;
         else{
-            string pattern = patternName.toStdString();
+            QString pattern = patternName;
             if(hasFront){
                 fileInfo.setFile(DFAR4Address);
                 if(!fileInfo.isFile())  DFAR4Address = "";

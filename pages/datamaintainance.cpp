@@ -42,6 +42,8 @@ void dataMaintainance::on_Exit_button_clicked(){
 
 
 void dataMaintainance::on_Delete_button_clicked(){
+    if(!ui->tableView->currentIndex().isValid())
+        return;
     int row = ui->tableView->currentIndex().row();
     std::cout<<row<<std::endl;
     QMessageBox::StandardButton reply = QMessageBox::question(NULL, "删除", "确定删除这一条项目?", QMessageBox::No | QMessageBox::Yes, QMessageBox::No);
@@ -55,9 +57,11 @@ void dataMaintainance::on_Delete_button_clicked(){
 }
 
 void dataMaintainance::on_Edit_button_clicked(){
+    if(!ui->tableView->currentIndex().isValid())
+        return;
     int row = ui->tableView->currentIndex().row();
     dialog = new Dialog(this, MW->api);
-    std::string pattern = DModel->getItem(row);
+    QString pattern = DModel->getItem(row);
     dialog->init(pattern);
     connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
             this, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
@@ -79,7 +83,7 @@ void dataMaintainance::save_files(QString pattern, QString DFAR4Address, QString
                                   QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
                                   QString MimageAddress, bool hasBack, bool hasFront){
 
-    DModel->save_files( pattern.toStdString(),  DFAR4Address, DBAR4Address,
+    DModel->save_files( pattern,  DFAR4Address, DBAR4Address,
                         LFAR4Address, LBAR4Address, PimageAddress,
                         MimageAddress, hasBack, hasFront);
     ui->totalNum_label->setNum(DModel->getTotalPatternNum());
@@ -115,5 +119,7 @@ bool dataMaintainance::patternNameOverlapCheck(QString s){
 
 void dataMaintainance::on_search_lineEdit_textEdited(QString s){
 
-    DModel->searching(s.toStdString());
+    DModel->searching(s);
+    ui->Edit_button->setEnabled(false);
+    ui->Delete_button->setEnabled(false);
 }

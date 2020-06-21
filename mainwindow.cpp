@@ -1,11 +1,19 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
+#include "pages/startworking.h"
+#include <QTextCodec>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    QTextCodec *gbk = QTextCodec::codecForName("gb18030");
+    QTextCodec *utf8 = QTextCodec::codecForName("utf-8");
+
+
+    QTextCodec::setCodecForLocale(utf8);
+
 
     QPixmap pixmap(".\\data\\logo.png");
     //QPixmap pixmap("C:\\Users\\nzq82\\source\\QtRepos\\data\\logo.png");
@@ -13,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->logo_label->show();
 
 
-    loadPrintersInfo();
+
 //    DM = new dataMaintainance(this);
 //    SW = new startWorking(this);
 
@@ -22,29 +30,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /*************************************/
     // new a API based on progress.
-    api = new localAPI(".\\data");
+    api = new localAPI(this, ".\\data");
 
+    startWorking::api = api;
     /*************************************/
+
+    api->readPrinterData(printers);
 }
-
-
-void MainWindow::loadPrintersInfo(){
-    ifstream inFile(".\\data\\printers.csv", ios::in);
-    //ifstream inFile("C:\\Users\\nzq82\\source\\QtRepos\\data\\printers.csv", ios::in);
-    if(!inFile){
-        cout<<"failed to open printer file."<<endl;
-    }
-
-    string lineStr;
-
-    while (getline(inFile, lineStr))
-    {
-        std::cout<<lineStr<<std::endl;
-        Printer temp(lineStr);
-        printers.push_back(temp);
-    }
-}
-
 
 
 MainWindow::~MainWindow()
@@ -54,13 +46,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_Login_button_clicked(){
     this->hide();
+    DM = new dataMaintainance(this);
     open_datamaintainance();
+    PTM = new printTaskManagement(this);
 }
-
-//void MainWindow::on_SW_button_clicked(){
-//    this->hide();
-//    SW->show();
-//}
 
 
 void MainWindow::on_Exit_button_clicked(){
@@ -76,14 +65,12 @@ void MainWindow::open_printersetting(){
 
 
 void MainWindow::open_printtaskmanagement(){
-    PTM = new printTaskManagement(this);
     PTM->show();
     this->hide();
 }
 
 
 void MainWindow::open_datamaintainance(){
-    DM = new dataMaintainance(this);
     DM->show();
     this->hide();
 }
