@@ -11,6 +11,7 @@ OrderModel::OrderModel(QObject *parent)
 
 OrderModel::OrderModel(int ptrIdx, QObject *parent)
     : QAbstractTableModel(parent), printerIndex(ptrIdx){
+    cout<<"Ordermodel page: "<<printerIndex<<endl;
     totalNum = 0;
     currentToppingNum = 0;
     finishedNum = 0;
@@ -164,6 +165,7 @@ void OrderModel::addOrder(Order* o){
     temp.printerIdx = printerIndex;
     currentTaskID ++ ;
     temp.taskID = currentTaskID;
+
     tasklist.push_back(temp);
 }
 
@@ -174,7 +176,6 @@ void OrderModel::sortTable(){
 void OrderModel::update(){
     beginResetModel();
     sortTable();
-
     endResetModel();
 }
 

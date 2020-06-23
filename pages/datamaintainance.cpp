@@ -40,7 +40,6 @@ void dataMaintainance::on_Exit_button_clicked(){
 }
 
 
-
 void dataMaintainance::on_Delete_button_clicked(){
     if(!ui->tableView->currentIndex().isValid())
         return;
@@ -66,6 +65,8 @@ void dataMaintainance::on_Edit_button_clicked(){
     connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
             this, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
     connect(dialog, SIGNAL(PatternNameChanged(QString)), this, SLOT(delete_files(QString)));
+    connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
+            MW->PTM, SLOT(update(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
     dialog->show();
     ui->Edit_button->setEnabled(false);
     ui->Delete_button->setEnabled(false);

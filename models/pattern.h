@@ -4,6 +4,8 @@
 #include <string>
 #include <QPixmap>
 #include <QSize>
+#include <models\arx4.h>
+#include <models\color.h>
 
 using namespace std;
 
@@ -50,6 +52,8 @@ public:
 
     void computeFileReady();
 
+    vector<ARX4> files;
+    vector<Color> colors;
 };
 
 #endif // PATTERN_H

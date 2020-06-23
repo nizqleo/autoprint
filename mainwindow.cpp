@@ -20,8 +20,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->logo_label->setPixmap(pixmap);
     ui->logo_label->show();
 
-
-
 //    DM = new dataMaintainance(this);
 //    SW = new startWorking(this);
 

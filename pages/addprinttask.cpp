@@ -9,7 +9,6 @@ addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
 {
     ui->setupUi(this);
 
-
     QStringList word_list;
 
     for(int i = 0; i < MW->DM->DModel->patternNames.size(); i++){
@@ -48,6 +47,11 @@ addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
         ui->comboBox->addItem(MW->printers[i].name);
     }
     last_r = last_c = 0;
+
+
+    for(int i = 0; i < 13; i++){
+        ui->type_comboBox->addItem(printTypeString[i]);
+    }
 }
 
 
@@ -64,11 +68,11 @@ void addPrintTask::on_pattern_lineEdit_textChanged(QString s){
         ui->file_label->setText(file);
 
         if(pattern->hasMimages){
-            ui->M_label->setPixmap(pattern->Mimages.scaled(QSize(200, 200)));
+            ui->M_label->setPixmap(MW->api->loadPics(pattern->name, 1).scaled(QSize(200, 200),Qt::KeepAspectRatio,Qt::SmoothTransformation));
             ui->M_label->show();
         }
         if(pattern->hasPimages){
-            ui->P_label->setPixmap(pattern->Pimages.scaled(QSize(200, 200)));
+            ui->P_label->setPixmap(MW->api->loadPics(pattern->name, 0).scaled(QSize(200, 200),Qt::KeepAspectRatio,Qt::SmoothTransformation));
             ui->P_label->show();
         }
     }
@@ -105,13 +109,19 @@ void addPrintTask::on_comfirm_button_clicked(){
             numbers[i][j] = model->data(index).toInt();
         }
     }
-    emit send_orders(numbers, ui->pattern_lineEdit->text(), ui->comboBox->currentIndex());
+    emit send_orders(numbers, ui->pattern_lineEdit->text(), ui->type_comboBox->currentIndex(), ui->comboBox->currentIndex());
     this->close();
 }
 
 
 void addPrintTask::on_tableView_clicked(){
 
+    QModelIndex index = model->index(last_r, last_c, QModelIndex());
+    if(model->data(index).toInt() < 0){
+        model->setData(index, 0);
+        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "值错误", "请输入正值。", QMessageBox::Yes );
+        return ;
+    }
     // update column end
     int sum = 0;
     for(int i = 0; i < 8; i++){

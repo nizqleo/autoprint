@@ -46,7 +46,7 @@ private slots:
     void on_CancelButton_clicked();
 
 
-    void on_comboBox_changed(const QString & s);
+    void comboBox_changed();
 
 
 signals:

@@ -7,7 +7,7 @@ localAPI::localAPI()
 }
 
 localAPI::localAPI(MainWindow* MW, QString dir): API(MW), dir(dir){
-
+    codec = QTextCodec::codecForName("gbk");
     }
 
 
@@ -27,17 +27,17 @@ Pattern localAPI::readPatternData(QString pattern){
     QFileInfo fileInfo;
 
     //image
+    // produce pattern file: only check existance
     QImageReader Qimagereader(dir+"\\image\\"+tempPattern.name+"\\"+PimName);
     Qimagereader.setDecideFormatFromContent(true);
-
     if(Qimagereader.canRead()){
-        tempPattern.Pimages = QPixmap::fromImageReader(&Qimagereader);
         tempPattern.hasPimages = true;
     }else tempPattern.hasPimages = false;
 
+
     Qimagereader.setFileName(dir+"\\image\\"+tempPattern.name+"\\"+MimName);
     if(Qimagereader.canRead()){
-        tempPattern.Mimages = QPixmap::fromImageReader(&Qimagereader);
+        tempPattern.Mimages = QPixmap::fromImageReader(&Qimagereader).scaled(QSize(150,150), Qt::KeepAspectRatio, Qt::SmoothTransformation);
         tempPattern.hasMimages = true;
     }else tempPattern.hasMimages = false;
 
@@ -268,20 +268,32 @@ QString localAPI::showFileDirinDatabase(QString Pattern, int file){
     }
 }
 
-void localAPI::getERPOrders(vector<Order>& orderlist){
-    cout<<"start reading ERP Orders"<<endl;
+void localAPI::getERPOrders(vector<Order>& orderlist, QWidget* p){
+    qDebug()<<"API start reading ERP Orders"<<endl;
 
-    QFile file(dir+"\\ERP.csv");
+    QString fileNames = QFileDialog::getOpenFileName(p,"选择ERP订单文件", dir, "csv文件 (*.csv), *.csv;;全部文件(*.*)");
+
+    QFile file(fileNames);
 
     vector<QString> temp;
 
     if (file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
+        bool gbkfile = false;
         QByteArray line = file.readLine();
+        QString str = codec->toUnicode(line.constData(), line.size(), &state);
+        SplitString(str, temp, ",");
+        qDebug()<<"before test"<<endl;
+        if (temp[0] == "SKU编码"){
+            gbkfile = true;
+        }
         while (!file.atEnd())
         {
             line = file.readLine();
             QString str(line);
+            if(gbkfile)
+                str = codec->toUnicode(line.constData(), line.size(), &state);
+
             str = str.trimmed();
             temp.clear();
             //cout<<lineStr<<endl;
@@ -298,6 +310,7 @@ void localAPI::getERPOrders(vector<Order>& orderlist){
     else{
         cout<<"failed to open order file."<<endl;   
     }
+    qDebug()<<"API finished reading ERP Orders"<<endl;
 }
 
 void localAPI::readOrders(vector<Order>& orderlist){
@@ -379,7 +392,7 @@ void localAPI::readSavedTasks(OrderModel* OM){
 
             SplitString(str, temp, ",");
 
-            OM->tasklist.push_back(Task(temp));
+            OM->tasklist.push_back(Task(temp, OM->printerIndex));
 
         }
         file.close();
@@ -433,8 +446,10 @@ void localAPI::readPrinterData(vector<Printer>& printers){
             QString str(line);
             str = str.trimmed();
             Printer temp(str, cnt);
-            printers.push_back(temp);
-            cnt++;
+            //if(temp.availble){
+                printers.push_back(temp);
+                cnt++;
+            //}
         }
         file.close();
     }
@@ -443,8 +458,7 @@ void localAPI::readPrinterData(vector<Printer>& printers){
     }
 }
 
-
-int localAPI::sendPrintingFile(QString pattern, bool isDark, int num, QString printerName, bool front){
+int localAPI::sendPrintingFile(QString pattern, bool isDark, QString printerName, bool front){
 
     QDir qdir(dir+"\\CMD\\"+printerName);
 	if (!qdir.exists()){
@@ -594,4 +608,24 @@ int localAPI::sendPrintingFile(QString pattern, bool isDark, int num, QString pr
             }else return -1;
         }
     }
+}
+
+QPixmap localAPI::loadPics(QString _dir){
+    QImageReader Qimagereader(_dir);
+    Qimagereader.setDecideFormatFromContent(true);
+
+    QPixmap pixmapM = QPixmap::fromImageReader(&Qimagereader);
+    return pixmapM;
+}
+
+
+QPixmap localAPI::loadPics(QString name, bool isMimage){
+    QImageReader Qimagereader;
+    if(isMimage) Qimagereader.setFileName(dir+"\\image\\"+name+"\\"+MimName);
+    else Qimagereader.setFileName(dir+"\\image\\"+name+"\\"+PimName);
+
+    Qimagereader.setDecideFormatFromContent(true);
+
+    QPixmap pixmapM = QPixmap::fromImageReader(&Qimagereader);
+    return pixmapM;
 }

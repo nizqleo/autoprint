@@ -2,6 +2,7 @@
 #define LOCALAPI_H
 #include "api.h"
 #include <QDir>
+#include <QFileDialog>
 
 class localAPI:public API
 {
@@ -32,7 +33,7 @@ public:
 
     QString showFileDirinDatabase(QString Pattern, int file);
 
-    void getERPOrders(vector<Order>& orderlist);
+    void getERPOrders(vector<Order>& orderlist, QWidget* p);
     void saveOrders(vector<Order>& orderlist);
     void readOrders(vector<Order>& orderlist);
 
@@ -41,11 +42,16 @@ public:
 
     void readPrinterData(vector<Printer>& printers);
 
-    int sendPrintingFile(QString pattern, bool isDark, int num, QString printerName, bool front);
+    int sendPrintingFile(QString pattern, bool isDark, QString printerName, bool front);
 
     void sendSampleToPrinter(string printerName);
-private:
 
+    QPixmap loadPics(QString dir);
+    QPixmap loadPics(QString name, bool isMimage);
+
+private:
+    QTextCodec* codec;
+    QTextCodec::ConverterState state;
     // dir for local database
     QString dir;
 };

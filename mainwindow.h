@@ -34,6 +34,8 @@ public:
     void loadPrintersInfo();
     API* api;
     dataMaintainance* DM;
+    printerSetting* PS;
+    printTaskManagement* PTM;
 
 public slots:
     void on_Exit_button_clicked();
@@ -47,8 +49,7 @@ public slots:
 
 private:
     Ui::MainWindow *ui;
-    printerSetting* PS;
-    printTaskManagement* PTM;
+
 
 
     //startWorking* SW;

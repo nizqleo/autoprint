@@ -30,6 +30,7 @@ SOURCES += \
         auxiliary.cpp \
         main.cpp \
         mainwindow.cpp \
+        models/arx4.cpp \
         models/color.cpp \
         models/colortask.cpp \
         models/colortaskmodel.cpp \
@@ -46,14 +47,14 @@ SOURCES += \
         pages/pickuplist.cpp \
         pages/printersetting.cpp \
         pages/printtaskmanagement.cpp \
-        pages/startworking.cpp \
-        pages/temp.cpp
+        pages/startworking.cpp
 
 HEADERS += \
         API/api.h \
         API/localapi.h \
         auxiliary.h \
         mainwindow.h \
+        models/arx4.h \
         models/color.h \
         models/colortask.h \
         models/colortaskmodel.h \
@@ -70,8 +71,7 @@ HEADERS += \
         pages/pickuplist.h \
         pages/printersetting.h \
         pages/printtaskmanagement.h \
-        pages/startworking.h \
-        pages/temp.h
+        pages/startworking.h
 
 FORMS += \
         mainwindow.ui \

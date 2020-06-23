@@ -5,6 +5,7 @@
 #include <vector>
 #include "auxiliary.h"
 #include <qdebug.h>
+
 using namespace std;
 
 
@@ -21,9 +22,8 @@ using namespace std;
  * patterns are just a string here.
  */
 
-enum printType {ZPT, FG, K, LS, CS001, T, W225};
-extern QString printTypeString[7];
-extern QString colorString[9];
+extern QString printTypeString[14];
+extern QString colorString[14];
 extern QString colorErrorString[8];
 extern QString sizeString[5];
 
@@ -32,14 +32,13 @@ class Order
 public:
     Order();
     Order(vector<QString> record);
-    Order(QString name, int c, int s, int n);
+    Order(QString name, int c, int s, int n, int t);
     static int color2Index(QString c);
     static int size2Index(QString s);
-    static printType type2index(QString c);
+    static int type2index(QString c);
 
     void addOtherInfo(QString info);
 
-    //static const QString colorErrorString[8];
 
 //private:
     string SKU;
@@ -49,7 +48,7 @@ public:
     bool isDark;
     int size;
     bool finished;
-    printType type;
+    int type;
 
     int number;
 

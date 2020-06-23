@@ -31,7 +31,7 @@ class Task
 public:
     Task();
     Task( Order* o);
-    Task( vector<QString>& temp);
+    Task( vector<QString>& temp , int ID);
     ~Task();
     // Assigned
     int printerIdx;
@@ -56,14 +56,14 @@ public:
 private:
     Pattern* pattern; // might be NULL!
     QString name;
-    int numbers[9][6];
+    int numbers[6];
     int totalNum;
 
     vector<Order*> orders;
     // information
     TaskStatus Tstatus;
     bool fileReady;
-    printType type;
+    int type;
     QString createTime;
     QString modifiedTime;
     bool fromERP;

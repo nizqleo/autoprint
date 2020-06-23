@@ -59,7 +59,7 @@ QVariant TaskModel::data(const QModelIndex &index, int role) const
         if(index.column() == 5){// && index.row() == colorNum){
             return task.totalNum;
         }
-        return task.numbers[task.colorInfo][index.column()];
+        return task.numbers[index.column()];
 
     }
     return QVariant();

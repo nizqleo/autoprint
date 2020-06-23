@@ -18,7 +18,7 @@ Task::Task( Order* o){
 
     pattern = DModel->patternPointer(o->pattern);
 
-    numbers[o->color][o->size] = o->number;
+    numbers[o->size] = o->number;
     totalNum = o->number;
     pattern->computeFileReady();
 
@@ -33,10 +33,10 @@ Task::Task( Order* o){
     colorInfo = o->color;
 
     orders.push_back(o);
-    cout<<"finished."<<endl;
+
 }
 
-Task::Task( vector<QString>& temp){
+Task::Task( vector<QString>& temp, int ID):printerIdx(ID){
     //cout<<o->pattern<<endl;
     name = temp[0];
 
@@ -55,14 +55,15 @@ Task::Task( vector<QString>& temp){
         isDark = true;
     else isDark = false;
     fileReady = ((isDark && pattern->DarkReady) || (!isDark && pattern->LightReady));
+
 }
 
 void Task::init(){
-    for(int i = 0; i < 9; i++){
-        for(int j = 0; j < 6; j++){
-            numbers[i][j] = 0;
-        }
+
+    for(int j = 0; j < 6; j++){
+        numbers[j] = 0;
     }
+
 
     Tstatus = PENDING;
     fileReady = false;
@@ -79,7 +80,7 @@ datasetModel* Task::DModel;
 
 
 void Task::Add(Order* o){
-    numbers[o->color][o->size]+=o->number;
+    numbers[o->size]+=o->number;
     totalNum += o->number;
     orders.push_back(o);
 }
@@ -133,8 +134,8 @@ bool Task::operator<(const Task & right)const   //重载<运算符
 
 
     // file ready
-    if(!fileReady && right.fileReady) return true;
-    if(fileReady && !right.fileReady) return false;
+    if(!fileReady && right.fileReady) return false;
+    if(fileReady && !right.fileReady) return true;
 
 
     // hand topping
@@ -164,16 +165,16 @@ void Task::finishOrders(){
 
 
 QString Task::sizeNumberString(){
-    return QString::number(numbers[colorInfo][0])+"-"+
-            QString::number(numbers[colorInfo][1])+"-"+
-            QString::number(numbers[colorInfo][2])+"-"+
-            QString::number(numbers[colorInfo][3])+"-"+
-            QString::number(numbers[colorInfo][4]);
+    return QString::number(numbers[0])+"-"+
+            QString::number(numbers[1])+"-"+
+            QString::number(numbers[2])+"-"+
+            QString::number(numbers[3])+"-"+
+            QString::number(numbers[4]);
 }
 
 void Task::sizeNumberStringAnalysis(QString s){
     vector<QString> temp;
     SplitString(s, temp, "-");
     for(int i = 0; i < 5; i++)
-        numbers[colorInfo][i] = temp[i].toInt();
+        numbers[i] = temp[i].toInt();
 }

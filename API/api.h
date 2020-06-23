@@ -7,7 +7,7 @@
 #include <QProcess>
 #include <QDebug>
 #include <QImageReader>
-
+#include <QTextCodec>
 
 #include <models/pattern.h>
 #include <models/task.h>
@@ -48,7 +48,7 @@ public:
 
     virtual QString showFileDirinDatabase(QString Pattern, int file) = 0;
 
-    virtual void getERPOrders(vector<Order>& orderlist) = 0;
+    virtual void getERPOrders(vector<Order>& orderlist, QWidget* p) = 0;
     virtual void saveOrders(vector<Order>& orderlist) = 0;
 
     virtual void saveTasks(OrderModel* OM) = 0;
@@ -58,7 +58,11 @@ public:
 
     virtual void readPrinterData(vector<Printer>& printers) = 0;
 
-    virtual int sendPrintingFile(QString pattern, bool isDark, int num, QString printerName, bool front) = 0;
+    virtual int sendPrintingFile(QString pattern, bool isDark, QString printerName, bool front) = 0;
+
+    virtual QPixmap loadPics(QString dir) = 0;
+
+    virtual  QPixmap loadPics(QString name, bool isMimage) = 0;
 
     const static QString LFPrefix;
     const static QString LBPrefix;

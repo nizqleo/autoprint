@@ -1,6 +1,6 @@
 #include "color.h"
 
-color::color()
+Color::Color()
 {
 
 }

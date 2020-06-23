@@ -8,12 +8,13 @@ Dialog::Dialog(dataMaintainance* DM, API* api, QWidget *parent) :
     ui(new Ui::Dialog)
 {
     ui->setupUi(this);
+    setAttribute( Qt::WA_DeleteOnClose, true );
     isEdit = false;
     PatternChanged = false;
 
 
     setWindowTitle(tr("新增条目"));
-    connect(ui->comboBox, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(on_comboBox_changed(const QString &)));
+    connect(ui->comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(comboBox_changed()));
     DFAR4Address = "";
     DBAR4Address = "";
     LFAR4Address = "";
@@ -124,7 +125,7 @@ void Dialog::on_Mimage_toolButton_clicked(){
 }
 
 // swifting pattern picture distribution
-void Dialog::on_comboBox_changed(const QString & s){
+void Dialog::comboBox_changed(){
     switch(ui->comboBox->currentIndex()){
     case 0://front & back
         hasBack = true;
@@ -189,24 +190,24 @@ void Dialog::update(){
 
     QSize picSize(450, 280);
     //image
+
     QImageReader Qimagereader(MimageAddress);
     Qimagereader.setDecideFormatFromContent(true);
-
     if(Qimagereader.canRead()){
-        QPixmap pixmapM = QPixmap::fromImageReader(&Qimagereader).
+        QPixmap pixmapM = api->loadPics(MimageAddress).
                 scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation);
         ui->Mimage_label->setPixmap(pixmapM);
         ui->Mimage_label->show();
     }
 
     Qimagereader.setFileName(PimageAddress);
+    Qimagereader.setDecideFormatFromContent(true);
     if(Qimagereader.canRead()){
-        QPixmap pixmapP = QPixmap::fromImageReader(&Qimagereader).
+        QPixmap pixmapP = api->loadPics(PimageAddress).
                 scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation);
         ui->Pimage_label->setPixmap(pixmapP);
         ui->Pimage_label->show();
     }
-
 }
 
 void Dialog::on_ConfirmButton_clicked(){
@@ -315,11 +316,14 @@ int Dialog::fileReadyCheck(){
         if(!fileInfo.isFile())  { errorList += "\t浅色后片文件\n"; fileErrorNum++;}
     }
 
-    QImageReader Qimagereader(PimageAddress);
+    QImageReader Qimagereader(MimageAddress);
+    Qimagereader.setDecideFormatFromContent(true);
+    if(!Qimagereader.canRead())  errorList += "\t效果图/模特图文件\n";
+
+    Qimagereader.setFileName(PimageAddress);
     Qimagereader.setDecideFormatFromContent(true);
     if(!Qimagereader.canRead())  errorList += "\t生产版单文件\n";
-    Qimagereader.setFileName(MimageAddress);
-    if(!fileInfo.isFile())  errorList += "\t效果图/模特图文件\n";
+
 
     if(errorList != ""){
         if(fileErrorNum == 4 || (fileErrorNum == 2 && (!hasBack || !hasFront))){

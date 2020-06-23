@@ -36,7 +36,8 @@ int datasetModel::rowCount(const QModelIndex & /* parent */) const
 //返回列数
 int datasetModel::columnCount(const QModelIndex & /* parent */) const
 {
-    return 5;
+    //return 5;
+    return 4;
 }
 
 //返回一个项的任意角色的值，这个项被指定为QModelIndex
@@ -61,16 +62,16 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
                 return QVariant("暂无图片");
         }
     }
-    if(index.column() == 2){
-        if(patterns[patternIndex].hasPimages){
-            if(role == Qt::DecorationRole)
-                return patterns[patternIndex].Pimages.scaled(QSize(150,150), Qt::KeepAspectRatioByExpanding,Qt::SmoothTransformation);
-        }
-        else {
-            if(role == Qt::DisplayRole)
-                return QVariant("暂无图片");
-        }
-    }
+//    if(index.column() == 2){
+//        if(patterns[patternIndex].hasPimages){
+//            if(role == Qt::DecorationRole)
+//                return patterns[patternIndex].Pimages.scaled(QSize(150,150), Qt::KeepAspectRatioByExpanding,Qt::SmoothTransformation);
+//        }
+//        else {
+//            if(role == Qt::DisplayRole)
+//                return QVariant("暂无图片");
+//        }
+//    }
 
     if (role == Qt::DisplayRole) {
         if(index.column() == 0){//pattern name
@@ -78,7 +79,7 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
         }
 
         int status = patterns[patternIndex].status;
-        if(index.column() == 3){//印花位置
+        if(index.column() == 2){//印花位置
             if (status>= 48) //11
                 return QVariant("前后皆有");
             else if(((status>>5) & 1) == 1) //10
@@ -87,7 +88,7 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
                 return QVariant("只有前片");
         }
 
-        if(index.column() == 4){//深片文件
+        if(index.column() == 3){//深片文件
             QString value = "";
             if(((status>>3) & 1) == 1)
                 value += "浅色前片文件\n";
@@ -125,11 +126,11 @@ QVariant datasetModel::headerData(int section,
         return QString("款号");
     case 1:
         return QString("效果图/模特图");
+//    case 2:
+//        return QString("生产版单");
     case 2:
-        return QString("生产版单");
-    case 3:
         return QString("印花位置");
-    case 4:
+    case 3:
         return QString("已保存文件");
     }
 }

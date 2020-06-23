@@ -12,7 +12,6 @@
 #include "models/order.h"
 #include "models/datasetmodel.h"
 #include "models/ordermodel.h"
-#include "pages/temp.h"
 
 class MainWindow;
 namespace Ui {
@@ -28,7 +27,7 @@ public:
     ~printTaskManagement();
 
     void saveOrders();
-
+    void totalUpdate();
 private slots:
     void on_dataPage_button_clicked();
     void on_settingPage_button_clicked();
@@ -46,11 +45,11 @@ private slots:
     void on_startPrint_button_clicked();
 
     void on_comboBox_changed(const QString & s);
-    void update(QString, QString, QString, QString, QString, QString, QString, bool,bool);
+    void update(QString, QString, QString, QString, QString, QString, QString, bool, bool);
 
     void receiving_asking(int row, bool working, int ID);
 
-    void receive_orders(int** numbers, QString name, int printerID);
+    void receive_orders(int** numbers, QString name, int type, int printerID);
     void updateTable(int i);
 
     void topTaskFinished(int printerID);
@@ -62,7 +61,7 @@ signals:
     void sending_new_task(Task*, int, int);
 
 private:
-    void orderAssignment(int begin, int end, int printerID = 0);
+    bool orderAssignment(int begin, int end, int printerID = 0);
     void updateDatasetWithOrder();
     void readSaveOrders();
 

@@ -2,10 +2,14 @@
 
 
 
-QString printTypeString[7] = {"ZPT", "FG", "K", "LS",
-                            "CS001", "T", "W225"};
-QString colorString[9] = {"白色", "黑色", "粉色", "蓝色",
-                            "绿色", "黄色", "紫色", "红色", "混色"};
+QString printTypeString[14] = {"ZPT", "FG", "K", "LS",
+                            "WT","WY","XCWT","WT",
+                              "ZPC", "ZPLMWY","WT","ZPWY",
+                              "W225","未识别类型"};
+QString colorString[14] = {"白色", "黑色", "粉色", "蓝色",
+                            "绿色", "黄色", "紫色", "红色",
+                          "浅粉色","天蓝色","橙色","灰色",
+                          "紫罗兰", "未识别色"};
 QString sizeString[5] = {"S", "M", "L", "XL", "XXL"};
 
 
@@ -39,14 +43,11 @@ Order::Order(vector<QString> record){
     if(color == 1 )
         isDark = true;
     else isDark = false;
-
-
 }
 
 
-Order::Order(QString name, int c, int s, int n):pattern(name), color(c),
-number(n),size(s){
-    type = ZPT;
+Order::Order(QString name, int c, int s, int n, int t):pattern(name), color(c),
+number(n),size(s), type(t){
 
     if(color == 1 )
         isDark = true;
@@ -60,33 +61,29 @@ void Order::addOtherInfo(QString info){
 
 int Order::color2Index(QString c){
 
-    if(c == colorErrorString[0]) return 0;
-    if(c == colorErrorString[1]) return 1;
-    if(c == colorErrorString[2]) return 2;
-    if(c == colorErrorString[3]) return 3;
-    if(c == colorErrorString[4]) return 4;
-    if(c == colorErrorString[5]) return 5;
-    if(c == colorErrorString[6]) return 6;
-    if(c == colorErrorString[7]) return 7;
+    //qDebug()<<"reading tasks"<<c<<endl;
+    for(int i = 0; i < 13; i++){
+        if(c == colorString[i])
+            return i;
+    }
+    return 13;
 }
 
 int Order::size2Index(QString c){
-    if(c == QString("S")) return 0;
-    if(c == QString("M")) return 1;
-    if(c == QString("L")) return 2;
-    if(c == QString("XL")) return 3;
-    if(c == QString( "XXL")) return 4;
+    for(int i = 0; i < 5; i++){
+        if(c == sizeString[i])
+            return i;
+    }
 }
 
-printType Order::type2index(QString c){
+int Order::type2index(QString c){
     //c = c.trimmed();
-    if(c == QString("ZPT")) return ZPT;
-    if(c == QString("FG")) return FG;
-    if(c == QString("K")) return K;
-    if(c == QString("LS")) return LS;
-    if(c == QString("CS001")) return CS001;
-    if(c == QString( "T")) return T;
-    if(c == QString("W225")) return W225;
+
+    for(int i = 0; i < 13; i++){
+        if(c == printTypeString[i])
+            return i;
+    }
+    return 13;
 }
 
 

@@ -44,7 +44,7 @@ private slots:
     void on_pattern_lineEdit_textChanged(QString s);
 
 signals:
-    void send_orders(int**, QString, int);
+    void send_orders(int**, QString, int, int);
 
 private:
     Ui::addPrintTask *ui;
