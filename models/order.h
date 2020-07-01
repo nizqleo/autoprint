@@ -1,10 +1,8 @@
 #ifndef ORDER_H
 #define ORDER_H
 
-#include <string>
+#include <QString>
 #include <vector>
-#include "auxiliary.h"
-#include <qdebug.h>
 
 using namespace std;
 
@@ -21,9 +19,8 @@ using namespace std;
  *
  * patterns are just a string here.
  */
-
-extern QString printTypeString[14];
-extern QString colorString[14];
+extern int colorNum;
+extern vector<QString> colorString;
 extern QString colorErrorString[8];
 extern QString sizeString[5];
 
@@ -32,7 +29,7 @@ class Order
 public:
     Order();
     Order(vector<QString> record);
-    Order(QString name, int c, int s, int n, int t);
+    Order(QString name, int c, int s, int n);
     static int color2Index(QString c);
     static int size2Index(QString s);
     static int type2index(QString c);
@@ -48,10 +45,8 @@ public:
     bool isDark;
     int size;
     bool finished;
-    int type;
-
     int number;
-
+    int type;
     QString otherInfos;
     bool fromERP;
 

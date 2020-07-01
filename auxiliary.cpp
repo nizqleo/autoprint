@@ -1,7 +1,8 @@
 
 #include "auxiliary.h"
 
-int get_files(QString fileFolderPath,std::vector<QString>&file)
+
+int get_files(QString fileFolderPath,std::vector<QString>&file, bool isDir)
 {
     QDir qdir(fileFolderPath);
     if(!qdir.exists())
@@ -28,13 +29,19 @@ int get_files(QString fileFolderPath,std::vector<QString>&file)
     for(int i = 0; i < list.size(); i++)
     {
         QFileInfo fileInfo = list.at(i);
-
-        if(fileInfo.isDir())//判断是否为文件夹
-        {
-            file.push_back(fileInfo.fileName());
+        if(isDir){
+            if(fileInfo.isDir())//判断是否为文件夹
+            {
+                file.push_back(fileInfo.fileName());
+            }
+        }
+        else{
+            if(!fileInfo.isDir())//判断是否为文件夹
+            {
+                file.push_back(fileInfo.fileName());
+            }
         }
     }
-
 }
 
 int SizeMap(string size){
@@ -113,6 +120,7 @@ int coverFileCopy(QString targetPath, QString originalPath){
     if(fi.exists()){
         fi.dir().remove(fi.fileName());
     }
+
     if(QFile::copy(originalPath,targetPath)){
         return 1;
     }
@@ -154,4 +162,59 @@ std::wstring s2ws(const std::string& s)
     delete []_Dest;
     setlocale(LC_ALL, "C");
     return result;
+}
+
+
+QString readXml(const QString& path, const QString& keynode){
+    QString readText;
+    int k = 1;
+    //打开或创建文件
+    QFile file(path); //相对路径、绝对路径、资源路径都行
+    if (!file.open(QFile::ReadOnly))
+     return NULL;
+
+    QDomDocument doc;
+    if (!doc.setContent(&file))
+    {
+     file.close();
+     return NULL;
+    }
+    file.close();
+
+    QDomElement root = doc.documentElement(); //返回根节点
+    QDomNode node = root.firstChild(); //获得第一个子节点
+
+    while (!node.isNull())
+    {
+     if (node.isElement() && node.nodeName() == keynode) //如果节点是元素
+     {
+         QDomElement e = node.toElement(); //转换为元素，注意元素和节点是两个数据结构，其实差不多
+         return e.text();
+     }
+     node = node.nextSibling(); //下一个兄弟节点,nextSiblingElement()是下一个兄弟元素，都差不多
+    }
+
+    return NULL;
+}
+
+
+bool deleteDirectory(const QString &path)
+{
+    if (path.isEmpty())
+        return false;
+
+    QDir dir(path);
+    if(!dir.exists())
+        return true;
+
+    dir.setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
+    QFileInfoList fileList = dir.entryInfoList();
+    foreach (QFileInfo fi, fileList)
+    {
+        if (fi.isFile())
+            fi.dir().remove(fi.fileName());
+        else
+            deleteDirectory(fi.absoluteFilePath());
+    }
+    return dir.rmpath(dir.absolutePath());
 }

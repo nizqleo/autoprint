@@ -5,7 +5,8 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <iostream>
-#include <API/api.h>
+#include <vector>
+#include "models/pattern.h"
 
 class dataMaintainance;
 
@@ -19,70 +20,60 @@ class Dialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit Dialog( dataMaintainance* DM, API* api, QWidget *parent = nullptr);
+    explicit Dialog( dataMaintainance* DM, Pattern* pattern, QWidget *parent = nullptr);
     ~Dialog();
-    void init(QString pattern);
+    void init(Pattern* pattern);
 
 private slots:
 
     void on_Pattern_lineEdit_textEdited(QString s);
+    void on_Note_lineEdit_textChanged(QString s);
 
-    void on_DFtool_button_clicked();
-    void on_DBtool_button_clicked();
-    void on_LFtool_button_clicked();
-    void on_LBtool_button_clicked();
-
-    void on_DF_lineEdit_textEdited(QString s);
-    void on_DB_lineEdit_textEdited(QString s);
-    void on_LF_lineEdit_textEdited(QString s);
-    void on_LB_lineEdit_textEdited(QString s);
+    void on_AR4_lineEdit_textChanged(QString s);
+    void on_AR4_tool_button_clicked();
 
     void on_Pimage_toolButton_clicked();
-    void on_Mimage_toolButton_clicked();
-    void on_Pimage_lineEdit_textEdited(QString s);
-    void on_Mimage_lineEdit_textEdited(QString s);
+    void on_Pimage_lineEdit_textChanged(QString s);
 
     void on_ConfirmButton_clicked();
     void on_CancelButton_clicked();
 
+    void on_add_button_clicked();
+    void on_delete_button_clicked();
 
-    void comboBox_changed();
+    void on_tableView_clicked();
 
+    void type_comboBox_changed(const QString & s);
 
 signals:
-    void confirmEditing(QString pattern, QString DFAR4Address, QString DBAR4Address,
-                        QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
-                        QString MimageAddress, bool basBack, bool hasFront);
+    void confirmEditing(Pattern* pattern);
     void PatternNameChanged(QString pattern);
 
 
 private:
     dataMaintainance* DM;
 
-    API* api;
     Ui::Dialog *ui;
+
     int index;
     bool isEdit;
-    bool PatternChanged;
-    bool hasBack;
-    bool hasFront;
 
     QString originalPatternName;
 
-    Pattern pattern;
+    Pattern* pattern;
+    AR4FileModel* fileModel;
     QString patternName;
 
-    QString DFAR4Address;
-    QString DBAR4Address;
-    QString LFAR4Address;
-    QString LBAR4Address;
-
     QString PimageAddress;
-    QString MimageAddress;
+    bool hasPimages;
+    QString AR4Address;
 
+    vector<QString> AR4FileAddresses;
 
     void update();
     int fileReadyCheck();
+
+    friend class AR4FileModel;
 };
 
 #endif // DIALOG_H

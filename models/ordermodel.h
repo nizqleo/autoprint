@@ -6,8 +6,6 @@
 #include <vector>
 #include <set>
 #include <iostream>
-
-
 #include "task.h"
 #include <QColor>
 
@@ -35,16 +33,19 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation,
                         int role) const;
 
-    void setCurrentPattern(QString pattern);
+//    void setCurrentPattern(QString pattern);
 
-    QString currentPattern;
+    //QString currentPattern;
 
-    void move(int index, int direction);
     void update(QString name);
     void update();
     void addOrder(Order* o);
 
     void numberCheck();
+
+    void filter(int type);
+
+    Task* getTaskAtIndex(int index);
 
     friend class printTaskManagement;
 
@@ -56,9 +57,11 @@ public:
     void sortTable();
 
     int currentTaskID;
+    bool filterMode;
+    int filteringType;
 
 private:
-
+    vector<int> indexMap;
 
 
 };

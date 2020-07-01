@@ -7,6 +7,8 @@ OrderModel::OrderModel(QObject *parent)
     : QAbstractTableModel(parent){
     totalNum = 0;
     currentToppingNum = 0;
+    filterMode = false;
+    filteringType = -1;
 }
 
 OrderModel::OrderModel(int ptrIdx, QObject *parent)
@@ -15,12 +17,17 @@ OrderModel::OrderModel(int ptrIdx, QObject *parent)
     totalNum = 0;
     currentToppingNum = 0;
     finishedNum = 0;
+    filterMode = false;
+    filteringType = -1;
 }
 
 //返回行数
 int OrderModel::rowCount(const QModelIndex & /* parent */) const
 {
-    return tasklist.size();
+    if(filterMode)
+        return indexMap.size();
+    else return tasklist.size();
+
 }
 
 //返回列数
@@ -38,24 +45,30 @@ QVariant OrderModel::data(const QModelIndex &index, int role) const
     if (role == Qt::TextAlignmentRole) {
         return int(Qt::AlignHCenter | Qt::AlignVCenter);
     }
-    else if (role == Qt::DisplayRole) {
+    unsigned long long patternIndex;
+
+    if(filterMode)
+         patternIndex = indexMap[index.row()];
+    else patternIndex = index.row();
+
+    if (role == Qt::DisplayRole) {
         switch (index.column()) {
             case 0:
-                return QVariant(tasklist[index.row()].pattern->name);
+                assert(patternIndex <tasklist.size());
+                assert(tasklist[patternIndex].pattern != NULL);
+                return QVariant(tasklist[patternIndex].pattern->name);
             case 1:
-                if(!tasklist[index.row()].pattern->hasMimages)
+                if(!tasklist[patternIndex].pattern->hasMimages)
                     return QVariant("暂无效果图");
                 else return QVariant();
             case 2:
-                return QVariant(printTypeString[tasklist[index.row()].type]);
+                return QVariant(printTypeString[tasklist[patternIndex].pattern->type]);
             case 3:
-                return QVariant(tasklist[index.row()].totalNum);
+                return QVariant(tasklist[patternIndex].totalNum);
             case 4:
-                if(tasklist[index.row()].fileReady)
-                    return QVariant("文件齐全");
-                else return QVariant("文件不全");
+                return tasklist[patternIndex].pattern->Notes;
             case 5:
-                switch (tasklist[index.row()].Tstatus) {
+                switch (tasklist[patternIndex].Tstatus) {
                     case FINISHED:
                         return QVariant("打印完毕");
                     case PRINTING:
@@ -66,26 +79,23 @@ QVariant OrderModel::data(const QModelIndex &index, int role) const
                         return QVariant("暂停中");
                  }
             case 6:
-                return QVariant(tasklist[index.row()].createTime);
+                return QVariant(tasklist[patternIndex].createTime);
             case 7:
-                if(tasklist[index.row()].fromERP)
+                if(tasklist[patternIndex].fromERP)
                     return QVariant("ERP订单");
                 else return QVariant("备货");
             case 8:
-                return QVariant(colorString[tasklist[index.row()].colorInfo]);
+                return QVariant(colorString[tasklist[patternIndex].colorInfo]);
         }
 
     }
     else if(role == Qt::DecorationRole){
-        if(index.column() == 1 &&  tasklist[index.row()].pattern->hasMimages){
-            return tasklist[index.row()].pattern->Mimages.scaled(QSize(100,100),Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        if(index.column() == 1 &&  tasklist[patternIndex].pattern->hasMimages){
+            return tasklist[patternIndex].pattern->Mimages.scaled(QSize(100,100),Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
     }
     else if(role == Qt::BackgroundRole){
-        if(!tasklist[index.row()].fileReady){
-            return QColor(Qt::lightGray);
-        }
-        if(tasklist[index.row()].topped){
+        if(tasklist[patternIndex].topped){
             return QColor(Qt::darkGreen);
         }
     }
@@ -115,7 +125,7 @@ QVariant OrderModel::headerData(int section,
     case 3:
         return QString("总数量"); //
     case 4:
-        return QString("AR4文件情况");
+        return QString("备注");
     case 5:
         return QString("状态"); //
     case 6:
@@ -128,19 +138,12 @@ QVariant OrderModel::headerData(int section,
 }
 
 
-void OrderModel::setCurrentPattern(QString pattern){
-    beginResetModel();
-    currentPattern = pattern;
-    endResetModel();
-}
+//void OrderModel::setCurrentPattern(QString pattern){
+//    beginResetModel();
+//    currentPattern = pattern;
+//    endResetModel();
+//}
 
-void OrderModel::move(int index, int direction){
-    beginResetModel();
-    if(index+direction < 0 || index+direction >= tasklist.size())
-        return;
-    swap(tasklist[index], tasklist[index+direction]);
-    endResetModel();
-}
 
 void OrderModel::update(QString name){
     beginResetModel();
@@ -153,9 +156,10 @@ void OrderModel::update(QString name){
 
 void OrderModel::addOrder(Order* o){
     totalNum += o->number;
+
     //search for tasks with same color, same pattern, (same timestamp)(later)
     for(int i = 0; i < tasklist.size(); i++){
-        if(tasklist[i].name == o->pattern && tasklist[i].colorInfo == o->color && tasklist[i].fromERP == o->fromERP){
+        if(tasklist[i].Tstatus == PENDING && tasklist[i].name == o->pattern && tasklist[i].colorInfo == o->color && tasklist[i].fromERP == o->fromERP){
             tasklist[i].Add(o);
             return;
         }
@@ -176,6 +180,7 @@ void OrderModel::sortTable(){
 void OrderModel::update(){
     beginResetModel();
     sortTable();
+    filter(filteringType);
     endResetModel();
 }
 
@@ -185,5 +190,40 @@ void OrderModel::numberCheck(){
         totalNum += tasklist[i].totalNum;
         if(tasklist[i].Tstatus == FINISHED)
             finishedNum+=tasklist[i].totalNum;
+    }
+}
+
+
+void OrderModel::filter(int type){
+    filteringType = type;
+    beginResetModel();
+    if(type == -1){
+        filterMode = false;
+        endResetModel();
+        return;
+    }
+    indexMap.clear();
+    for(int i = 0; i < tasklist.size(); i++){
+        if(tasklist[i].type == type){
+            indexMap.push_back(i);
+        }
+    }
+    filterMode = true;
+    endResetModel();
+}
+
+
+
+
+Task* OrderModel::getTaskAtIndex(int index){
+    if(filterMode){
+        if(index >= indexMap.size())
+            return NULL;
+        return &tasklist[indexMap[index]];
+    }
+    else {
+        if(index >= tasklist.size())
+            return NULL;
+        return &tasklist[index];
     }
 }

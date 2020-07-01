@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -30,6 +30,7 @@ SOURCES += \
         auxiliary.cpp \
         main.cpp \
         mainwindow.cpp \
+        models/ar4filemodel.cpp \
         models/arx4.cpp \
         models/color.cpp \
         models/colortask.cpp \
@@ -42,6 +43,7 @@ SOURCES += \
         models/task.cpp \
         models/taskmodel.cpp \
         pages/addprinttask.cpp \
+        pages/dashboard.cpp \
         pages/datamaintainance.cpp \
         pages/dialog.cpp \
         pages/pickuplist.cpp \
@@ -54,6 +56,7 @@ HEADERS += \
         API/localapi.h \
         auxiliary.h \
         mainwindow.h \
+        models/ar4filemodel.h \
         models/arx4.h \
         models/color.h \
         models/colortask.h \
@@ -66,6 +69,7 @@ HEADERS += \
         models/task.h \
         models/taskmodel.h \
         pages/addprinttask.h \
+        pages/dashboard.h \
         pages/datamaintainance.h \
         pages/dialog.h \
         pages/pickuplist.h \
@@ -76,6 +80,7 @@ HEADERS += \
 FORMS += \
         mainwindow.ui \
         pages/addprinttask.ui \
+        pages/dashboard.ui \
         pages/datamaintainance.ui \
         pages/dialog.ui \
         pages/pickuplist.ui \

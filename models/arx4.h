@@ -2,14 +2,26 @@
 #define ARX4_H
 
 #include <QPixmap>
+#include <vector>
+#include <auxiliary.h>
+#include <models\order.h>
 
+using namespace std;
+
+extern QString positionString[4];
+extern QString platenSizeString[6];
+extern QString InkString[2];
+
+class Pattern;
 
 class ARX4
 {
 public:
     ARX4();
+    ARX4(vector<QString>& temp);
 
-    QPixmap image;
+
+    //bool imageSaved;
 
     /* Platen sizes
      * 0:16*21
@@ -21,8 +33,15 @@ public:
     int platenSize;
     bool whiteInk;
 
+    int applyColor;
+    int position;
 
-    void readFiles(QString fileName);
+    QString color2QString() const;
+    void colorQStr2Index(QString c);
+
+    static int position2Index(QString c);
+    static int platenSize2Index(QString c);
+
 };
 
 #endif // ARX4_H

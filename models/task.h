@@ -56,13 +56,13 @@ public:
 private:
     Pattern* pattern; // might be NULL!
     QString name;
-    int numbers[6];
+    int numbers[5];
     int totalNum;
 
     vector<Order*> orders;
     // information
     TaskStatus Tstatus;
-    bool fileReady;
+    //bool fileReady;
     int type;
     QString createTime;
     QString modifiedTime;

@@ -1,9 +1,9 @@
 #ifndef PRINTER_H
 #define PRINTER_H
 
-#include <string>
+#include <QString>
 #include <vector>
-#include <auxiliary.h>
+
 
 using namespace std;
 

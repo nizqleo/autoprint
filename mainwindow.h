@@ -9,11 +9,8 @@
 
 #include "models\printer.h"
 
-#include "API\api.h"
-#include "API\localapi.h"
-#include "auxiliary.h"
-#include <QTextCodec>
 
+#include <QTextCodec>
 
 namespace Ui {
 class MainWindow;
@@ -32,7 +29,7 @@ public:
 
     vector<Printer> printers;
     void loadPrintersInfo();
-    API* api;
+
     dataMaintainance* DM;
     printerSetting* PS;
     printTaskManagement* PTM;

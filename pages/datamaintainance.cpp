@@ -1,6 +1,8 @@
 #include "datamaintainance.h"
 #include "ui_datamaintainance.h"
 #include "mainwindow.h"
+
+
 dataMaintainance::dataMaintainance(MainWindow *mainwindow, QWidget *parent) :
     QWidget(parent),MW(mainwindow),
     ui(new Ui::dataMaintainance)
@@ -8,11 +10,11 @@ dataMaintainance::dataMaintainance(MainWindow *mainwindow, QWidget *parent) :
     ui->setupUi(this);
 
     //自定义表模型
-    DModel = new datasetModel(mainwindow->api);
+    DModel = new datasetModel();
+
     ui->tableView->setModel(DModel);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch );
     ui->tableView->horizontalHeader()->setSectionResizeMode(1,QHeaderView::ResizeToContents );
-    ui->tableView->horizontalHeader()->setSectionResizeMode(2,QHeaderView::ResizeToContents );
     ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents );
 
     ui->Edit_button->setEnabled(false);
@@ -22,9 +24,9 @@ dataMaintainance::dataMaintainance(MainWindow *mainwindow, QWidget *parent) :
     connect(this, SIGNAL(settingpageopen()), MW, SLOT(open_printersetting()));
 
     //QPixmap pixmap("C:\\Users\\nzq82\\source\\QtRepos\\data\\logo.png");
-    QPixmap pixmap(".\\data\\logo.png");
-    ui->logoLabel->setPixmap(pixmap);
-    ui->logoLabel->show();
+//    QPixmap pixmap(".\\data\\logo.png");
+//    ui->logoLabel->setPixmap(pixmap);
+//    ui->logoLabel->show();
     ui->totalNum_label->setNum(DModel->getTotalPatternNum());
     ui->search_lineEdit->setPlaceholderText("输入款号搜索");
 }
@@ -38,7 +40,6 @@ void dataMaintainance::on_Exit_button_clicked(){
     MW->show();
     this->hide();
 }
-
 
 void dataMaintainance::on_Delete_button_clicked(){
     if(!ui->tableView->currentIndex().isValid())
@@ -59,34 +60,33 @@ void dataMaintainance::on_Edit_button_clicked(){
     if(!ui->tableView->currentIndex().isValid())
         return;
     int row = ui->tableView->currentIndex().row();
-    dialog = new Dialog(this, MW->api);
-    QString pattern = DModel->getItem(row);
-    dialog->init(pattern);
-    connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
-            this, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
+
+    dialog = new Dialog(this, &DModel->patterns[row]);
+
+    connect(dialog, SIGNAL(confirmEditing(Pattern*)), this, SLOT(AddNewPattern(Pattern*)));
+    connect(dialog, SIGNAL(confirmEditing(Pattern*)), MW->PTM, SLOT(updatePatternInfo(Pattern*)));
+
     connect(dialog, SIGNAL(PatternNameChanged(QString)), this, SLOT(delete_files(QString)));
-    connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
-            MW->PTM, SLOT(update(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
+
     dialog->show();
     ui->Edit_button->setEnabled(false);
     ui->Delete_button->setEnabled(false);
 }
 
 void dataMaintainance::on_Add_button_clicked(){
-    dialog = new Dialog(this, MW->api);
-    connect(dialog, SIGNAL(confirmEditing(QString, QString, QString, QString, QString, QString, QString, bool,bool)),
-            this, SLOT(save_files(QString, QString, QString, QString, QString, QString, QString, bool,bool)));
+    dialog = new Dialog(this, NULL);
+
+    connect(dialog, SIGNAL(confirmEditing(Pattern*)), this, SLOT(AddNewPattern(Pattern*)));
     dialog->show();
 }
 
+void dataMaintainance::AddNewPattern(Pattern* pattern){
+    DModel->patternSetUpdate(pattern);
+    ui->totalNum_label->setNum(DModel->getTotalPatternNum());
+}
 
-void dataMaintainance::save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
-                                  QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
-                                  QString MimageAddress, bool hasBack, bool hasFront){
-
-    DModel->save_files( pattern,  DFAR4Address, DBAR4Address,
-                        LFAR4Address, LBAR4Address, PimageAddress,
-                        MimageAddress, hasBack, hasFront);
+void dataMaintainance::AddNewPattern(QString pattern, int type){
+    DModel->patternSetUpdate(pattern, type);
     ui->totalNum_label->setNum(DModel->getTotalPatternNum());
 }
 
@@ -101,12 +101,10 @@ void dataMaintainance::delete_files(QString pattern){
     ui->totalNum_label->setNum(DModel->getTotalPatternNum());
 }
 
-
 void dataMaintainance::on_taskPage_button_clicked(){
     emit taskpageopen();
     this->close();
 }
-
 
 void dataMaintainance::on_settingPage_button_clicked(){
     emit settingpageopen();

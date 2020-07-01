@@ -43,11 +43,18 @@
             <height>130</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <pointsize>20</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
           </property>
           <property name="text">
-           <string>TextLabel</string>
+           <string>InnCool Print</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -203,7 +210,7 @@
      <x>0</x>
      <y>0</y>
      <width>488</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>

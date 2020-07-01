@@ -1,7 +1,8 @@
 #include "addprinttask.h"
 #include "ui_addprinttask.h"
 #include "mainwindow.h"
-
+#include "auxiliary.h"
+#include "API/api.h"
 
 addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
     QWidget(parent),MW(MW),
@@ -20,11 +21,14 @@ addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
     completer->setFilterMode(Qt::MatchContains);
     ui->pattern_lineEdit->setCompleter(completer);
 
-    model = new QStandardItemModel(9,6);
+    model = new QStandardItemModel(colorString.size(),6);
 
     QStringList labels = QObject::trUtf8("S,M,L,XL,XXL,总计").simplified().split(",");
     model->setHorizontalHeaderLabels(labels);
-    labels = QObject::trUtf8("白色,黑色,粉色,蓝色,绿色,黄色,紫色,红色,总计").simplified().split(",");
+    labels.clear();
+    for(auto p = colorString.begin(); p < colorString.end(); p++){
+        labels<<*p;
+    }
     model->setVerticalHeaderLabels(labels);
 
     for (int row = 0; row < 9; ++row){
@@ -48,31 +52,27 @@ addPrintTask::addPrintTask(MainWindow *MW, QWidget *parent) :
     }
     last_r = last_c = 0;
 
-
-    for(int i = 0; i < 13; i++){
-        ui->type_comboBox->addItem(printTypeString[i]);
-    }
 }
 
 
 void addPrintTask::on_pattern_lineEdit_textChanged(QString s){
-    //cout<<"edited"<<endl;
     if(MW->DM->DModel->hasPatternName(s)){
         pattern = MW->DM->DModel->patternPointer(s);
         QString file = "";
-        if(pattern->DarkReady)  file+="深色文件\n";
-        if(pattern->LightReady)  file+="浅色文件\n";
+
         if(file == "") file = "文件不齐全";
         else file.chop(1);
 
-        ui->file_label->setText(file);
+        ui->note_label->setText(pattern->Notes);
+
+        ui->type_label->setText(printTypeString[pattern->type]);
 
         if(pattern->hasMimages){
-            ui->M_label->setPixmap(MW->api->loadPics(pattern->name, 1).scaled(QSize(200, 200),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+            ui->M_label->setPixmap(pattern->Mimages.scaled(QSize(300, 200),Qt::KeepAspectRatio,Qt::SmoothTransformation));
             ui->M_label->show();
         }
         if(pattern->hasPimages){
-            ui->P_label->setPixmap(MW->api->loadPics(pattern->name, 0).scaled(QSize(200, 200),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+            ui->P_label->setPixmap(api->loadPics(pattern->name, 0).scaled(QSize(300, 200),Qt::KeepAspectRatio,Qt::SmoothTransformation));
             ui->P_label->show();
         }
     }
@@ -95,8 +95,8 @@ void addPrintTask::on_Return_button_clicked(){
 
 
 void addPrintTask::on_comfirm_button_clicked(){
-    if(ui->pattern_lineEdit->text() == ""){
-        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "无款号", "请输入款号！", QMessageBox::Yes );
+    if(!MW->DM->DModel->hasPatternName(ui->pattern_lineEdit->text())){
+        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "款号错误", "数据库中未查到对应款，请输入正确款号！", QMessageBox::Yes );
         return;
     }
 
@@ -109,7 +109,7 @@ void addPrintTask::on_comfirm_button_clicked(){
             numbers[i][j] = model->data(index).toInt();
         }
     }
-    emit send_orders(numbers, ui->pattern_lineEdit->text(), ui->type_comboBox->currentIndex(), ui->comboBox->currentIndex());
+    emit send_orders(numbers, ui->pattern_lineEdit->text(), ui->comboBox->currentIndex());
     this->close();
 }
 

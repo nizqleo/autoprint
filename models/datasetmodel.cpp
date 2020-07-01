@@ -1,24 +1,44 @@
 #include <QtCore>
 
 #include "datasetmodel.h"
+#include "auxiliary.h"
+#include <direct.h>
 
-datasetModel::datasetModel(API* api ,QObject *parent)
-    : QAbstractTableModel(parent),api(api)
+#include "models/task.h"
+
+#include <QMap>
+#include <QPixmap>
+
+#include <cstdio>
+#include <QMessageBox>
+#include <algorithm>
+#include <QFileInfo>
+#include <fstream>
+#include "API/api.h"
+
+datasetModel::datasetModel(QObject *parent)
+    : QAbstractTableModel(parent)
 {
     readDataset();
     Task::DModel = this;
     searchingMode = false;
+
 }
 
+/* Only called once when the program starts.
+ * read the file system and build the patterns.
+ */
 void datasetModel::readDataset()
 {
     beginResetModel();
 
     api->getPatternNameList(patternNames);
-
+    int cnt = 0;
     for (int i = 0; i < patternNames.size(); i++) {
-        Pattern temp = api->readPatternData(patternNames[i]);
-        patterns.push_back(temp);
+        patterns.push_back(Pattern(patternNames[i]));
+        api->readPatternData(patterns[cnt]);
+//        patterns[cnt].AR4Files->api = api;
+        cnt++;
     }
 
     endResetModel();
@@ -51,7 +71,7 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
         return int(Qt::AlignHCenter | Qt::AlignVCenter);
     }
 
-    int patternIndex = foundIndexMap(index.row());
+    unsigned long long patternIndex = foundIndexMap(index.row());
     if(index.column() == 1){
         if(patterns[patternIndex].hasMimages){
             if(role == Qt::DecorationRole)
@@ -62,48 +82,24 @@ QVariant datasetModel::data(const QModelIndex &index, int role) const
                 return QVariant("暂无图片");
         }
     }
-//    if(index.column() == 2){
-//        if(patterns[patternIndex].hasPimages){
-//            if(role == Qt::DecorationRole)
-//                return patterns[patternIndex].Pimages.scaled(QSize(150,150), Qt::KeepAspectRatioByExpanding,Qt::SmoothTransformation);
-//        }
-//        else {
-//            if(role == Qt::DisplayRole)
-//                return QVariant("暂无图片");
-//        }
-//    }
 
     if (role == Qt::DisplayRole) {
         if(index.column() == 0){//pattern name
             return patternNames[patternIndex];
         }
 
-        int status = patterns[patternIndex].status;
-        if(index.column() == 2){//印花位置
-            if (status>= 48) //11
-                return QVariant("前后皆有");
-            else if(((status>>5) & 1) == 1) //10
-                return QVariant("只有后片");
-            else //01
-                return QVariant("只有前片");
+        if(index.column() == 2){//文件
+            QString content;
+            for (auto p = patterns[patternIndex].AR4Files->files.begin();
+                  p < patterns[patternIndex].AR4Files->files.end(); p ++) {
+                content += p->color2QString()+positionString[p->position]+"文件\n";
+            }
+            content.chop(1);
+            return content;
         }
 
-        if(index.column() == 3){//深片文件
-            QString value = "";
-            if(((status>>3) & 1) == 1)
-                value += "浅色前片文件\n";
-            if(((status>>2) & 1) == 1)
-                value += "深色前片文件\n";
-            if(((status>>1) & 1) == 1)
-                value += "浅色后片文件\n";
-            if((status & 1) == 1)
-                value += "深色后片文件\n";
-
-            if(value == QString(""))
-                value = "无";
-            else value.chop(1);
-
-            return QVariant(value);
+        if(index.column() == 3){//备注
+            return patterns[patternIndex].Notes;
         }
         return QVariant();
     }
@@ -129,9 +125,9 @@ QVariant datasetModel::headerData(int section,
 //    case 2:
 //        return QString("生产版单");
     case 2:
-        return QString("印花位置");
-    case 3:
         return QString("已保存文件");
+    case 3:
+        return QString("备注");
     }
 }
 
@@ -158,32 +154,43 @@ QString datasetModel::getItem(int index){
 }
 
 
-void datasetModel::save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
-                              QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
-                              QString MimageAddress, bool hasBack, bool hasFront){
-    std::cout<<"saving"<<std::endl;
+void datasetModel::patternSetUpdate(Pattern* pattern){
     beginResetModel();
-
-    int patternIndex;
-    patternIndex = std::find(patternNames.begin(), patternNames.end(), pattern) - patternNames.begin();
+    unsigned long long patternIndex;
+    patternIndex = std::find(patternNames.begin(), patternNames.end(), pattern->name) - patternNames.begin();
     if(patternIndex == patternNames.size()){
-        patternNames.push_back(pattern);
-        Pattern temp;
+
+        patternNames.push_back(pattern->name);
+        Pattern temp(*pattern);
+//        temp.AR4Files->api = api;
         patterns.push_back(temp);
     }
-    patterns[patternIndex].name = pattern;
-    patterns[patternIndex].hasBack = hasBack;
-    patterns[patternIndex].hasFront = hasFront;
 
-    api->savePatternData(pattern, DFAR4Address, DBAR4Address,
-                        LFAR4Address, LBAR4Address, PimageAddress,
-                         MimageAddress, hasBack, hasFront);
-    api->examPatternData(&patterns[patternIndex]);
+    patterns[patternIndex].name = pattern->name;
+    patterns[patternIndex].Mimages = api->loadPics(pattern->name, 1);
+    if(!patterns[patternIndex].Mimages.isNull())
+        patterns[patternIndex].hasMimages = true;
 
     endResetModel();
 }
 
 
+void datasetModel::patternSetUpdate(QString pattern, int type){
+    beginResetModel();
+    unsigned long long patternIndex;
+    patternIndex = std::find(patternNames.begin(), patternNames.end(), pattern) - patternNames.begin();
+    if(patternIndex == patternNames.size()){
+        patternNames.push_back(pattern);
+        Pattern temp(pattern);
+        temp.type = type;
+//        temp.AR4Files->api = api;
+        patterns.push_back(temp);
+    }
+
+    patterns[patternIndex].name = pattern;
+    endResetModel();
+}
+\
 int datasetModel::getIndex(QString pattern){
     return std::find(patternNames.begin(), patternNames.end(), pattern) - patternNames.begin();
 }

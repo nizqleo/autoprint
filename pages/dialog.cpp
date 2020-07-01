@@ -1,37 +1,71 @@
 #include "dialog.h"
 #include "ui_dialog.h"
 #include "pages\datamaintainance.h"
+#include <API/api.h>
 
-
-Dialog::Dialog(dataMaintainance* DM, API* api, QWidget *parent) :
-    QDialog(parent),DM(DM),api(api),
+Dialog::Dialog(dataMaintainance* DM,Pattern* _pattern, QWidget *parent) :
+    QDialog(parent),DM(DM),pattern(_pattern),
     ui(new Ui::Dialog)
 {
     ui->setupUi(this);
     setAttribute( Qt::WA_DeleteOnClose, true );
-    isEdit = false;
-    PatternChanged = false;
 
 
-    setWindowTitle(tr("新增条目"));
-    connect(ui->comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(comboBox_changed()));
-    DFAR4Address = "";
-    DBAR4Address = "";
-    LFAR4Address = "";
-    LBAR4Address = "";
+    ui->color_comboBox->addItem("默认");
+    for(int i = 0; i < colorString.size(); i++){
+        ui->color_comboBox->addItem(colorString[i]);
+    }
+    for(int i = 0; i < 4; i++){
+        ui->position_comboBox->addItem(positionString[i]);
+    }
+    for(int i = 0; i < 4; i++){
+        ui->type_comboBox->addItem(printTypeString[i]);
+    }
 
-    //default state
-    hasBack = true;
-    hasFront = true;
-    ui->DBtool_button->setEnabled(true);
-    ui->LBtool_button->setEnabled(true);
-    ui->DB_lineEdit->setEnabled(true);
-    ui->LB_lineEdit->setEnabled(true);
+    ui->type_comboBox->setCurrentIndex(0);
+    ui->color_comboBox->setCurrentIndex(0);
+    ui->position_comboBox->setCurrentIndex(0);
 
-    ui->DFtool_button->setEnabled(true);
-    ui->LFtool_button->setEnabled(true);
-    ui->DF_lineEdit->setEnabled(true);
-    ui->LF_lineEdit->setEnabled(true);
+    ui->delete_button->setEnabled(false);
+
+    if(_pattern == NULL){
+        setWindowTitle(tr("新增条目"));
+        isEdit = false;
+        fileModel = new AR4FileModel();
+        pattern = new Pattern();
+        ui->type_comboBox->setCurrentIndex(0);
+    }
+
+    else{
+        setWindowTitle(tr("修改条目"));
+        isEdit=true;
+        patternName = pattern->name;
+
+        ui->Pattern_lineEdit->setText(patternName);
+        ui->Note_lineEdit->setText(pattern->Notes);
+
+        originalPatternName = pattern->name;
+
+        //Pimage
+        if(pattern->hasPimages)
+            PimageAddress = api->showFileDirinDatabase(pattern->name, 4);
+        else PimageAddress = "";
+        ui->Pimage_lineEdit->setText(PimageAddress);
+
+        // create tableView element
+        fileModel = new AR4FileModel(pattern->AR4Files);
+        api->fillImagesAddresses(pattern->name, fileModel->images, AR4FileAddresses);
+
+        ui->type_comboBox->setCurrentIndex(pattern->type);
+
+    }
+
+    ui->tableView->setModel(fileModel);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents );
+    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents );
+
+    connect(ui->type_comboBox, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(type_comboBox_changed(const QString &)));
 }
 
 Dialog::~Dialog()
@@ -39,201 +73,56 @@ Dialog::~Dialog()
     delete ui;
 }
 
-void Dialog::init(QString name){// happens only in editing
-    setWindowTitle(tr("修改条目"));
-    isEdit=true;
-    pattern = api->readPatternData(name);
-
-    ui->Pattern_lineEdit->setText(name);
-    originalPatternName = name;
-
-    if (pattern.status < 48) {//
-        if((pattern.status>>5) & 1 == 1){ //10 只有后
-            ui->comboBox->setCurrentIndex(2);
-            hasFront = false;
-
-            ui->DFtool_button->setEnabled(false);
-            ui->LFtool_button->setEnabled(false);
-            ui->DF_lineEdit->setEnabled(false);
-            ui->LF_lineEdit->setEnabled(false);
-            ui->DF_lineEdit->setText("");
-            ui->LF_lineEdit->setText("");
-        }
-        else {//01
-            ui->comboBox->setCurrentIndex(1);
-            hasBack = false;
-            ui->DBtool_button->setEnabled(false);
-            ui->LBtool_button->setEnabled(false);
-            ui->DB_lineEdit->setEnabled(false);
-            ui->LB_lineEdit->setEnabled(false);
-            ui->DB_lineEdit->setText("");
-            ui->LB_lineEdit->setText("");
-        }
-    }
-
-    if(((pattern.status>>3) & 1) == 1)
-        LFAR4Address = api->showFileDirinDatabase(name, 1);
-    if(((pattern.status>>2) & 1) == 1)
-        DFAR4Address = api->showFileDirinDatabase(name, 0);
-    if(((pattern.status>>1) & 1) == 1)
-        LBAR4Address = api->showFileDirinDatabase(name, 2);
-    if((pattern.status & 1) == 1)
-        DBAR4Address = api->showFileDirinDatabase(name, 3);
-
-
-    if(pattern.hasPimages)
-        PimageAddress = api->showFileDirinDatabase(name, 4);
-    else PimageAddress = "";
-
-    if(pattern.hasMimages)
-        MimageAddress = api->showFileDirinDatabase(name, 5);
-    else MimageAddress = "";
-
-    update();
-}
-
-void Dialog::on_DFtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择深色前片AR4文件"), DM->searchDir, tr("全部文件 （*.*）, *.*;; ARX4文件 (*.arx4),*.arx4;; ARXP文件 (*.arxp),*.arxp"));
-    DFAR4Address = fileNames;
-    update();
-}
-void Dialog::on_DBtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择深色后片AR4文件"), DM->searchDir,tr("全部文件 （*.*）, *.*;;   ARX4文件 (*.arx4),*.arx4;;ARXP文件 (*.arxp),*.arxp"));
-    DBAR4Address = fileNames;
-    update();
-}
-void Dialog::on_LFtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择浅色前片AR4文件"), DM->searchDir,tr("全部文件 （*.*）, *.*;;  ARX4文件 (*.arx4),*.arx4;;ARXP文件 (*.arxp),*.arxp"));
-    LFAR4Address = fileNames;
-    update();
-}
-void Dialog::on_LBtool_button_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择浅色后片AR4文件"), DM->searchDir,tr("全部文件 （*.*）, *.*;;   ARX4文件 (*.arx4),*.arx4;;ARXP文件 (*.arxp),*.arxp"));
-    LBAR4Address = fileNames;
-    update();
+void Dialog::on_AR4_tool_button_clicked(){
+    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择新AR4文件"), DM->searchDir, tr("全部文件 （*.*）, *.*;; ARX4文件 (*.arx4),*.arx4;; ARXP文件 (*.arxp),*.arxp"));
+    ui->AR4_lineEdit->setText(fileNames);
 }
 
 void Dialog::on_Pimage_toolButton_clicked(){
-    QString fileNames = QFileDialog::getOpenFileName(this,tr("选择生产版单文件"), DM->searchDir,  tr("全部文件 （*.*）, *.*;;图片文件(*png *jpg)"));
-    PimageAddress = fileNames;
-    update();
-}
-void Dialog::on_Mimage_toolButton_clicked(){
     QString fileNames = QFileDialog::getOpenFileName(this,tr("选择效果图/模特图文件"), DM->searchDir, tr("全部文件 （*.*）, *.*;;图片文件(*png *jpg)"));
-    MimageAddress = fileNames;
-    update();
-}
-
-// swifting pattern picture distribution
-void Dialog::comboBox_changed(){
-    switch(ui->comboBox->currentIndex()){
-    case 0://front & back
-        hasBack = true;
-        hasFront = true;
-
-        ui->DBtool_button->setEnabled(true);
-        ui->LBtool_button->setEnabled(true);
-        ui->DB_lineEdit->setEnabled(true);
-        ui->LB_lineEdit->setEnabled(true);
-
-        ui->DFtool_button->setEnabled(true);
-        ui->LFtool_button->setEnabled(true);
-        ui->DF_lineEdit->setEnabled(true);
-        ui->LF_lineEdit->setEnabled(true);
-        break;
-    case 1:// front
-        hasBack = false;
-        hasFront = true;
-        ui->DBtool_button->setEnabled(false);
-        ui->LBtool_button->setEnabled(false);
-        ui->DB_lineEdit->setEnabled(false);
-        ui->LB_lineEdit->setEnabled(false);
-        ui->DB_lineEdit->setText("");
-        ui->LB_lineEdit->setText("");
-
-        ui->DFtool_button->setEnabled(true);
-        ui->LFtool_button->setEnabled(true);
-        ui->DF_lineEdit->setEnabled(true);
-        ui->LF_lineEdit->setEnabled(true);
-        break;
-    case 2:// back
-        hasFront = false;
-        hasBack = true;
-
-        ui->DBtool_button->setEnabled(true);
-        ui->LBtool_button->setEnabled(true);
-        ui->DB_lineEdit->setEnabled(true);
-        ui->LB_lineEdit->setEnabled(true);
-
-        ui->DFtool_button->setEnabled(false);
-        ui->LFtool_button->setEnabled(false);
-        ui->DF_lineEdit->setEnabled(false);
-        ui->LF_lineEdit->setEnabled(false);
-        ui->DF_lineEdit->setText("");
-        ui->LF_lineEdit->setText("");
-        break;
-    }
-
-    update();
+    ui->Pimage_lineEdit->setText(fileNames);
 }
 
 void Dialog::update(){
-    patternName = ui->Pattern_lineEdit->text();
+//    patternName = ui->Pattern_lineEdit->text();
 
-    ui->DF_lineEdit->setText(DFAR4Address);
-    ui->DB_lineEdit->setText(DBAR4Address);
-    ui->LF_lineEdit->setText(LFAR4Address);
-    ui->LB_lineEdit->setText(LBAR4Address);
+//    ui->AR4_lineEdit->setText(AR4Address);
 
-    ui->Mimage_lineEdit->setText(MimageAddress);
-    ui->Pimage_lineEdit->setText(PimageAddress);
+//    ui->Pimage_lineEdit->setText(PimageAddress);
 
-    QSize picSize(450, 280);
-    //image
+//    QSize picSize(450, 280);
+//    //image
 
-    QImageReader Qimagereader(MimageAddress);
-    Qimagereader.setDecideFormatFromContent(true);
-    if(Qimagereader.canRead()){
-        QPixmap pixmapM = api->loadPics(MimageAddress).
-                scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation);
-        ui->Mimage_label->setPixmap(pixmapM);
-        ui->Mimage_label->show();
-    }
-
-    Qimagereader.setFileName(PimageAddress);
-    Qimagereader.setDecideFormatFromContent(true);
-    if(Qimagereader.canRead()){
-        QPixmap pixmapP = api->loadPics(PimageAddress).
-                scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation);
-        ui->Pimage_label->setPixmap(pixmapP);
-        ui->Pimage_label->show();
-    }
+//    QImageReader Qimagereader(PimageAddress);
+//    Qimagereader.setDecideFormatFromContent(true);
+//    if(Qimagereader.canRead()){
+//        QPixmap pixmapM = api->loadPics(PimageAddress).
+//                scaled(picSize,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+//        ui->Pimage_label->setPixmap(pixmapM);
+//        ui->Pimage_label->show();
+//    }
 }
 
 void Dialog::on_ConfirmButton_clicked(){
-    int fileStatus = fileReadyCheck();
+    try{
+        api->savePatternData(patternName, PimageAddress, ui->Note_lineEdit->text(),
+                             ui->type_comboBox->currentIndex(), AR4FileAddresses, fileModel);
+        delete pattern->AR4Files;
 
-    if(fileStatus == 2){// file covering exists happens only when editing.
-        QMessageBox::StandardButton reply = QMessageBox::question(NULL, "确认修改", "本次修改将导致已有文件被覆盖，是否确认修改？", QMessageBox::Yes | QMessageBox::No);
-        if (reply == QMessageBox::No)
-            return ;
-        else{
-            emit confirmEditing(patternName, DFAR4Address,DBAR4Address,LFAR4Address,LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
-            if(PatternChanged){
-                emit PatternNameChanged(originalPatternName);
-            }
-            this->close();
-        }
-    }
-    if(fileStatus == 1){ // no file covering
-        emit confirmEditing(patternName, DFAR4Address,DBAR4Address,LFAR4Address,LBAR4Address, PimageAddress, MimageAddress, hasBack, hasFront);
-        if(isEdit && PatternChanged){
+        pattern->AR4Files = new AR4FileModel(fileModel);
+        pattern->type = ui->type_comboBox->currentIndex();
+        pattern->Notes = ui->Note_lineEdit->text();
+        pattern->hasPimages = hasPimages;
+        pattern->name = ui->Pattern_lineEdit->text();
+
+        emit confirmEditing(pattern);
+        if(pattern->name != patternName){
             emit PatternNameChanged(originalPatternName);
         }
         this->close();
     }
-    else{ // 0
-        return;
+    catch( exception& e ){
+        QMessageBox::StandardButton reply = QMessageBox::information(NULL, "发生错误", e.what(), QMessageBox::Yes );
     }
 }
 
@@ -249,6 +138,7 @@ void Dialog::on_CancelButton_clicked(){
 void Dialog::on_Pattern_lineEdit_textEdited(QString s){
 
     patternName = s;
+
     // check
     if(DM->patternNameOverlapCheck(s)){
         ui->label_error->setText("款号和已有款号冲突！");
@@ -262,38 +152,30 @@ void Dialog::on_Pattern_lineEdit_textEdited(QString s){
         ui->label_error->setText("");
         ui->ConfirmButton->setEnabled(true);
     }
-    update();
-    PatternChanged = true;
+
 }
 
-
-void Dialog::on_DF_lineEdit_textEdited(QString s){
-    DFAR4Address = s;
-    update();
-}
-void Dialog::on_DB_lineEdit_textEdited(QString s){
-    DBAR4Address = s;
-    update();
-}
-void Dialog::on_LF_lineEdit_textEdited(QString s){
-    LFAR4Address = s;
-    update();
-}
-void Dialog::on_LB_lineEdit_textEdited(QString s){
-    LBAR4Address = s;
-    update();
+void Dialog::on_AR4_lineEdit_textChanged(QString s){
+    AR4Address = s;
 }
 
-void Dialog::on_Pimage_lineEdit_textEdited(QString s){
+void Dialog::on_Pimage_lineEdit_textChanged(QString s){
     PimageAddress = s;
-    update();
-}
-void Dialog::on_Mimage_lineEdit_textEdited(QString s){
-    MimageAddress = s;
-    update();
+
+    QImageReader Qimagereader(PimageAddress);
+    Qimagereader.setDecideFormatFromContent(true);
+    if(Qimagereader.canRead()){
+        QPixmap pixmapM = api->loadPics(PimageAddress).
+                scaled(QSize(790,300),Qt::KeepAspectRatio,Qt::SmoothTransformation);
+        ui->Pimage_label->setPixmap(pixmapM);
+        ui->Pimage_label->show();
+        hasPimages = true;
+    }
 }
 
 int Dialog::fileReadyCheck(){
+    return 1;
+    /*
     if(ui->Pattern_lineEdit->text() == ""){
         QMessageBox::StandardButton reply = QMessageBox::information(NULL, "无款号", "请输入款号！", QMessageBox::Yes);
         return 0;
@@ -378,5 +260,82 @@ int Dialog::fileReadyCheck(){
             else
                 return 1;
         }
+    }*/
+}
+
+void Dialog::on_add_button_clicked(){
+    // check input error:
+    ui->delete_button->setEnabled(false);
+
+    vector<int> colorList;
+    // fill colorList
+    colorList.push_back(ui->color_comboBox->currentIndex()-1);
+
+    int posi = ui->position_comboBox->currentIndex();
+    qDebug()<<colorList[0]<< ' '<<posi<<endl;
+    ARX4 temp;
+    QPixmap image;
+    int result = api->extractARX4file(ui->AR4_lineEdit->text(), temp, image);
+
+    // input dir error
+    if(result != 0){
+        if(result == -2201)
+            QMessageBox::information(NULL, "文件错误", "解析ARX4文件失败，请确认文件类型是否正确。",
+                                                                         QMessageBox::Yes );
+        else
+            QMessageBox::information(NULL, "文件错误", "新增ARX4文件失败，错误代码："+QString::number(result),
+                                                                         QMessageBox::Yes );
+        return;
     }
+
+    temp.position = posi;
+
+    for(auto p = colorList.begin(); p < colorList.end(); p++){
+
+        auto f = fileModel->searchFile(*p, posi);
+        if(f != fileModel->files.end()){// if (color, position) exists
+            QString colorStr;
+            if(*p == -1) colorStr = API::defaultColor;
+            else colorStr = colorString[*p];
+
+            QMessageBox::StandardButton reply = QMessageBox::question(NULL, "文件重复",
+                "已存在"+colorStr+positionString[posi]+"的ARX4文件，是否继续覆盖保存？", QMessageBox::Yes |QMessageBox::No);
+            if(reply == QMessageBox::No) continue;
+            // else: cover the original one
+
+            AR4FileAddresses[f-fileModel->files.begin()] = ui->AR4_lineEdit->text();
+            temp.applyColor = *p;
+            fileModel->addItem(temp, image, f-fileModel->files.begin());
+        }
+        else{
+            AR4FileAddresses.push_back(ui->AR4_lineEdit->text());
+            temp.applyColor = *p;
+            if(*p != -1){
+                pattern->specialColor.push_back(*p);
+            }
+
+            fileModel->addItem(temp, image, -1);
+        }
+    }
+}
+
+void Dialog::on_delete_button_clicked(){
+    if(!ui->tableView->currentIndex().isValid())
+        return;
+
+    int index = ui->tableView->currentIndex().row();
+    fileModel->deleteItem(index);
+    AR4FileAddresses.erase(index + AR4FileAddresses.begin());
+}
+
+void Dialog::on_Note_lineEdit_textChanged(QString s){
+    pattern->Notes = s;
+}
+
+void Dialog::on_tableView_clicked(){
+    ui->delete_button->setEnabled(true);
+}
+
+void Dialog::type_comboBox_changed(const QString & s){
+
 }

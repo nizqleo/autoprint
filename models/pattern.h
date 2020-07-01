@@ -4,8 +4,9 @@
 #include <string>
 #include <QPixmap>
 #include <QSize>
-#include <models\arx4.h>
+
 #include <models\color.h>
+#include "models\ar4filemodel.h"
 
 using namespace std;
 
@@ -14,9 +15,10 @@ using namespace std;
  * unit in the dataset.
  *
  * Constructed by datasetModel when it's newly built and reading files.
- *
- *
  */
+
+extern QString printTypeString[5];
+
 class Pattern
 {
 public:
@@ -24,36 +26,30 @@ public:
     Pattern();
     //Pattern(DataRead* DR, string name);
 
-    void sendAR4File();
+    Pattern(QString name);
+
     void save();
     void Delete();
 
-    // parameters
-    QString name;
-    bool hasBack;
-    bool hasFront;
-    bool hasPimages;
-    bool hasMimages;
-    bool DarkReady;
-    bool LightReady;
-
-    /* 111111 == 63
-     * 1     : has back 32
-     *  1    : has front 16
-     *   1   : has LF 8
-     *    1  : has DF 4
-     *     1 : has LB 2
-     *      1: has DB 1
-     */
-    int status;
-
-    QPixmap Pimages;
-    QPixmap Mimages;
-
     void computeFileReady();
 
-    vector<ARX4> files;
-    vector<Color> colors;
+    QPixmap getPimage();
+
+
+    QString name;
+
+    bool hasPimages;
+    bool hasMimages;
+
+    QPixmap Mimages;
+
+    int type;
+    QString Notes;
+
+    AR4FileModel* AR4Files;
+    vector<int> specialColor;
+
+    static int type2index(QString c);
 };
 
 #endif // PATTERN_H

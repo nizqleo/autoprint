@@ -23,9 +23,9 @@ Task::Task( Order* o){
     pattern->computeFileReady();
 
     isDark = o->isDark;
-    fileReady = ((isDark && pattern->DarkReady) || (!isDark && pattern->LightReady));
+//    fileReady = ((isDark && pattern->DarkReady) || (!isDark && pattern->LightReady));
 
-    type = o->type;
+    type = pattern->type;
 
     QDateTime curDateTime=QDateTime::currentDateTime();
     createTime = curDateTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -41,7 +41,7 @@ Task::Task( vector<QString>& temp, int ID):printerIdx(ID){
     name = temp[0];
 
     pattern = DModel->patternPointer(temp[0]);
-    type = Order::type2index(temp[1]);
+    type = Pattern::type2index(temp[1]);
     totalNum = temp[2].toInt();
     colorInfo = Order::color2Index(temp[3]);
     fromERP = temp[4].toInt();
@@ -54,19 +54,19 @@ Task::Task( vector<QString>& temp, int ID):printerIdx(ID){
     if(colorInfo == 1 )
         isDark = true;
     else isDark = false;
-    fileReady = ((isDark && pattern->DarkReady) || (!isDark && pattern->LightReady));
+   // fileReady = ((isDark && pattern->DarkReady) || (!isDark && pattern->LightReady));
 
 }
 
 void Task::init(){
 
-    for(int j = 0; j < 6; j++){
+    for(int j = 0; j < 5; j++){
         numbers[j] = 0;
     }
 
 
     Tstatus = PENDING;
-    fileReady = false;
+    //fileReady = false;
     fromERP = false;
     topped = false;
 }
@@ -74,7 +74,8 @@ void Task::init(){
 void Task::update(){
     if(pattern)
         pattern->computeFileReady();
-    fileReady = ((isDark && pattern->DarkReady) || (!isDark && pattern->LightReady));
+
+    type = pattern->type;
 }
 datasetModel* Task::DModel;
 
@@ -133,9 +134,9 @@ bool Task::operator<(const Task & right)const   //重载<运算符
     }
 
 
-    // file ready
-    if(!fileReady && right.fileReady) return false;
-    if(fileReady && !right.fileReady) return true;
+//    // file ready
+//    if(!fileReady && right.fileReady) return false;
+//    if(fileReady && !right.fileReady) return true;
 
 
     // hand topping

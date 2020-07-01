@@ -1,4 +1,6 @@
 #include "printer.h"
+#include <auxiliary.h>
+
 
 Printer::Printer(QString info, int ID):printerID(ID)
 {

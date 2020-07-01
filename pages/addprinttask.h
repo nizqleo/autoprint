@@ -13,7 +13,7 @@
 
 #include <QDirModel>
 #include <QCompleter>
-#include "auxiliary.h"
+
 #include "models/pattern.h"
 #include "models/datasetmodel.h"
 
@@ -44,7 +44,7 @@ private slots:
     void on_pattern_lineEdit_textChanged(QString s);
 
 signals:
-    void send_orders(int**, QString, int, int);
+    void send_orders(int**, QString, int);
 
 private:
     Ui::addPrintTask *ui;

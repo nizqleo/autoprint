@@ -36,9 +36,6 @@ private slots:
     void on_Edit_button_clicked();
     void on_Exit_button_clicked();
 
-    void save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
-                    QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
-                    QString MimageAddress, bool hasBack, bool hasFront);
     void delete_files(QString pattern);
 
     void on_tableView_clicked();
@@ -48,6 +45,11 @@ private slots:
 
     void on_search_lineEdit_textEdited(QString s);
 
+    /* add new pattern to Model
+     * and add totalnum
+     */
+    void AddNewPattern(Pattern* pattern);
+    void AddNewPattern(QString pattern, int type);
 signals:
     void taskpageopen();
     void settingpageopen();

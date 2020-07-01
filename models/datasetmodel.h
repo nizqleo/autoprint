@@ -2,19 +2,7 @@
 #define DATASETMODEL_H
 
 #include <QAbstractTableModel>
-#include <QMap>
-#include <QPixmap>
-#include "auxiliary.h"
-#include <cstdio>
-#include <QMessageBox>
-#include <algorithm>
-#include <QFileInfo>
-#include <fstream>
-#include <direct.h>
-#include "API/api.h"
 #include "models/pattern.h"
-#include "models/task.h"
-
 
 
 /* datasetModel -- a class of pattern dataset.
@@ -29,7 +17,7 @@
 class datasetModel : public QAbstractTableModel
 {
 public:
-    datasetModel(API* api ,QObject *parent = 0);
+    datasetModel(QObject *parent = 0);
 
     void readDataset();
     int rowCount(const QModelIndex &parent) const;
@@ -41,14 +29,8 @@ public:
     void deleteItem(int index);
     QString getItem(int index);
     int getIndex(QString pattern);
-    //string dir = "C:\\Users\\nzq82\\source\\QtRepos\\data";
-    QString dir = ".\\data";
 
-    // do file savings
-    // and update informations
-    void save_files(QString pattern, QString DFAR4Address, QString DBAR4Address,
-                    QString LFAR4Address, QString LBAR4Address, QString PimageAddress,
-                    QString MimageAddress, bool hasBack, bool hasFront);
+
     bool patternNameOverlapCheck(QString s);
 
     Pattern* patternPointer(QString name);
@@ -64,6 +46,12 @@ public:
     int getTotalPatternNum();
 
     friend class addPrintTask;
+    friend class dataMaintainance;
+
+    // add new item into the table
+    void patternSetUpdate(Pattern* pattern);
+
+    void patternSetUpdate(QString pattern, int type);
 
 private:
 
@@ -73,8 +61,6 @@ private:
     vector<Pattern> patterns;
 
     bool searchingMode;
-
-    API* api;
 };
 
 #endif
